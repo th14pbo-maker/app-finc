@@ -1,0 +1,7 @@
+services:
+  finance-os:
+    build: .
+    container_name: finance-os
+    restart: unless-stopped
+    ports:
+      - "8765:80"

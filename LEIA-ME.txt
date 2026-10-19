@@ -1,0 +1,53 @@
+FINANCE OS LOCAL
+================
+
+Sem mensalidade de hospedagem, assinatura, API paga ou conta obrigatoria.
+Seus dados ficam 100% seguros no seu navegador.
+
+COMO INICIAR NO COMPUTADOR
+--------------------------
+1. Extraia TODO o pacote para uma pasta no seu computador.
+
+2. No Windows:
+   - De dois cliques em "Iniciar-Windows.bat".
+   - O iniciador detecta automaticamente Python 3 ou Node.js.
+
+3. No macOS / Linux:
+   - De dois cliques em "Iniciar-Mac-Linux.command" (ou rode via terminal).
+
+4. Via Terminal (opcional):
+   - Com Node.js:  npm start     (ou: node server.mjs)
+   - Com Python 3: py -3 iniciar.py  (ou: python3 iniciar.py)
+
+5. O navegador abrira automaticamente em http://127.0.0.1:8765.
+6. Mantenha a janela do terminal aberta durante o uso. Para encerrar, pressione Ctrl+C.
+
+
+DEPLOY / HOSPEDAGEM ONLINE (OPCIONAL)
+-------------------------------------
+O Finance OS e uma SPA estatica pura e pode ser hospedado gratuitamente:
+- Vercel: basta conectar o repositorio (vercel.json configurado na raiz).
+- Netlify: pasta de publicacao "app" (netlify.toml configurado na raiz).
+- Docker: rode "docker compose up -d" (Dockerfile e docker-compose prontos).
+- GitHub Pages ou Cloudflare Pages: aponte para a pasta "app".
+
+
+ONDE FICAM OS DADOS
+-------------------
+Os registros ficam no armazenamento local do navegador (localStorage), nao na pasta.
+- Use sempre o mesmo navegador e endereco http://127.0.0.1:8765.
+- Nao use janela anonima (ao fechar a janela anonima, os dados sao descartados).
+- Faca backups periodicos em: Configuracoes > Backup e transferencia > Baixar backup completo.
+
+
+TRANSFERIR DADOS ENTRE DISPOSITIVOS
+-----------------------------------
+1. No dispositivo de origem: Configuracoes > Backup e transferencia > Baixar backup completo.
+2. No novo dispositivo: Configuracoes > Backup e transferencia > Restaurar backup.
+3. Confirme os valores para importar.
+
+
+DOCUMENTACAO COMPLETA
+---------------------
+Consulte o arquivo README.md para todos os detalhes de arquitetura,
+estrutura de pastas e tecnologias utilizadas.

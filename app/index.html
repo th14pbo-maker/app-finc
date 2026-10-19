@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <meta name="color-scheme" content="dark light">
+  <meta name="description" content="Finance OS — uma visão clara do seu dinheiro, das suas escolhas e dos seus próximos passos. Sem mensalidade, 100% privado.">
+  
+  <!-- Open Graph / Social Sharing -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Finance OS — Seu dinheiro, com clareza">
+  <meta property="og:description" content="Organize seu presente e abra espaço para os seus próximos planos. Funciona localmente com total privacidade.">
+  <meta property="og:image" content="assets/favicon.svg">
+  
+  <!-- Mobile & PWA Capabilities -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Finance OS">
+
+  <title>Finance OS — Seu dinheiro, com clareza</title>
+  
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/favicon.svg">
+  <link rel="manifest" href="manifest.webmanifest">
+  
+  <!-- Preload core fonts for zero layout shift -->
+  <link rel="preload" href="assets/inter.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/geist.woff2" as="font" type="font/woff2" crossorigin>
+
+  <!-- Instant Theme Detection Script -->
+  <script>
+    try {
+      const stored = localStorage.getItem("finance-os:personal:v1");
+      const pref = stored ? JSON.parse(stored)?.preferences?.theme : "dark";
+      document.documentElement.dataset.theme = pref === "light" ? "light" : "dark";
+    } catch {}
+  </script>
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/app.css">
+</head>
+<body>
+  <a class="skip" href="#main">Ir para o conteúdo</a>
+  <div id="app"></div>
+  <div id="notifications" aria-live="polite"></div>
+
+  <!-- Main Application Entrypoint -->
+  <script type="module" src="js/app.mjs"></script>
+
+  <!-- Optional Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost')) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

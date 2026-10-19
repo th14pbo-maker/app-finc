@@ -1,0 +1,42 @@
+# Sistema Operacional
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv/
+
+# Backups e Dados Privados (segurança contra commits de finanças reais)
+finance-os-backup-*.json
+finance-os-*.csv
+*.backup.json
+
+# IDEs e Editores
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Build / Temp
+dist/
+build/
+.cache/
