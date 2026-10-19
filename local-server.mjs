@@ -58,10 +58,11 @@ function checkExistingInstance(cb) {
 }
 
 const server = http.createServer((req, res) => {
-  // Disallow outside hosts if bound to loopback
+  // Disallow outside hosts only if bound strictly to loopback and not in a cloud environment
+  const isCloud = !!(process.env.VERCEL || process.env.PORT || process.env.NODE_ENV === 'production');
   const hostHeader = req.headers.host || '';
-  if (HOST === '127.0.0.1' && !hostHeader.startsWith('127.0.0.1:') && !hostHeader.startsWith('localhost:')) {
-    res.writeHead(403, { 'Content-Type': 'text/plain' });
+  if (!isCloud && HOST === '127.0.0.1' && !hostHeader.startsWith('127.0.0.1:') && !hostHeader.startsWith('localhost:')) {
+    res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
     res.end('Host não permitido.');
     return;
   }

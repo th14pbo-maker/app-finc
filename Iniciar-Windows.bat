@@ -23,7 +23,7 @@ if %errorlevel%==0 (
 where node >nul 2>nul
 if %errorlevel%==0 (
   echo Python nao localizado. Iniciando via Node.js...
-  node server.mjs
+  node local-server.mjs
   goto :finish
 )
 

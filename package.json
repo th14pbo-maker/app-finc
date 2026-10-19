@@ -3,11 +3,10 @@
   "version": "1.0.0",
   "description": "Finance OS — Sistema operacional financeiro pessoal, local, privado e pronto para deploy.",
   "type": "module",
-  "main": "server.mjs",
   "scripts": {
-    "start": "node server.mjs",
-    "dev": "node server.mjs",
-    "serve": "node server.mjs",
+    "start": "node local-server.mjs",
+    "dev": "node local-server.mjs",
+    "serve": "node local-server.mjs",
     "build": "node -e \"console.log('Finance OS: Aplicação estática pura pronta para deploy em app/')\""
   },
   "keywords": [

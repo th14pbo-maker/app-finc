@@ -24,7 +24,7 @@
 ```
 Finance-OS-Local/
 ├── 📄 package.json              # Configurações de scripts npm (start, dev)
-├── 📄 server.mjs                # Servidor local Node.js (zero dependências)
+├── 📄 local-server.mjs          # Servidor local Node.js (zero dependências)
 ├── 📄 iniciar.py                # Servidor local Python 3 (padrão standard library)
 ├── ⚙️ Iniciar-Windows.bat        # Inicializador inteligente para Windows (Python ou Node)
 ├── ⚙️ Iniciar-Mac-Linux.command  # Inicializador para macOS e Linux
@@ -89,7 +89,7 @@ Finance-OS-Local/
 # Iniciar o servidor
 npm start
 # ou
-node server.mjs
+node local-server.mjs
 ```
 
 ### Opção 4: Via Python (Terminal)

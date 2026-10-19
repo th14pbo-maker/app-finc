@@ -16,7 +16,7 @@ COMO INICIAR NO COMPUTADOR
    - De dois cliques em "Iniciar-Mac-Linux.command" (ou rode via terminal).
 
 4. Via Terminal (opcional):
-   - Com Node.js:  npm start     (ou: node server.mjs)
+   - Com Node.js:  npm start     (ou: node local-server.mjs)
    - Com Python 3: py -3 iniciar.py  (ou: python3 iniciar.py)
 
 5. O navegador abrira automaticamente em http://127.0.0.1:8765.

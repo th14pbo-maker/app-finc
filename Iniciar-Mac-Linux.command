@@ -5,7 +5,7 @@ if command -v python3 >/dev/null 2>&1; then
   python3 iniciar.py
 elif command -v node >/dev/null 2>&1; then
   echo "Python3 não encontrado. Iniciando via Node.js..."
-  node server.mjs
+  node local-server.mjs
 else
   echo "========================================================"
   echo "  Nenhum ambiente suportado foi encontrado."
