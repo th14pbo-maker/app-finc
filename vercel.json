@@ -14,10 +14,17 @@
       ]
     },
     {
+      "source": "/sw.js",
+      "headers": [
+        { "key": "Content-Type", "value": "application/javascript; charset=utf-8" },
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+      ]
+    },
+    {
       "source": "/js/(.*)\\.mjs",
       "headers": [
         { "key": "Content-Type", "value": "text/javascript; charset=utf-8" },
-        { "key": "Cache-Control", "value": "public, max-age=3600, must-revalidate" }
+        { "key": "Cache-Control", "value": "no-cache, must-revalidate" }
       ]
     },
     {
