@@ -53,8 +53,10 @@
   <!-- Optional Service Worker Registration -->
   <script>
     if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost')) {
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => { if (!refreshing) { refreshing = true; window.location.reload(); } });
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(() => {});
+        navigator.serviceWorker.register('./sw.js', {updateViaCache: 'none'}).catch(() => {});
       });
     }
   </script>

@@ -7,7 +7,8 @@
     "start": "node local-server.mjs",
     "dev": "node local-server.mjs",
     "serve": "node local-server.mjs",
-    "build": "node -e \"console.log('Finance OS: Aplicação estática pura pronta para deploy em app/')\""
+    "build": "node -e \"console.log('Finance OS: Aplicação estática pura pronta para deploy em app/')\"",
+    "test": "node --test tests/*.test.mjs"
   },
   "keywords": [
     "finance",

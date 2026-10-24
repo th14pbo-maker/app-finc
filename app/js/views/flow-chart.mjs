@@ -1,3 +1,4 @@
+import {priorityExpenses} from '../classification.mjs';
 import {chartTypes,flowSeries,expenseSlices,scaleTicks,axisLabel} from '../flow-data.mjs';
 import {el,panel,panelHead,money,monthLabel,empty} from '../ui.mjs';
 const palette=['#38bdf8','#a78bfa','#34d399','#fb923c','#f472b6','#facc15','#2dd4bf','#60a5fa','#e879f9','#a3e635'];
@@ -28,6 +29,10 @@ function pie(c,slices){
  });
  return el('div',{class:'flow-pie'},[svg,el('ul',{class:'flow-pie-legend'},slices.map((slice,i)=>el('li',{},[el('i',{class:'flow-swatch',style:'background:'+palette[i%palette.length]}),el('span',{class:'grow'},slice.category),el('span',{class:'number'},c.state.preferences.hideAmounts?'•••':money(slice.cents)+' · '+new Intl.NumberFormat('pt-BR',{style:'percent',maximumFractionDigits:1}).format(slice.cents/total))])))]);
 }
+function priorityChart(c){
+ const rows=priorityExpenses(c.state,c.month),total=rows.reduce((sum,r)=>sum+r.cents,0),hidden=c.state.preferences.hideAmounts;
+ return el('section',{class:'priority-chart','aria-label':'Despesas por prioridade'},[el('h3',{},'Despesas por prioridade'),el('p',{class:'small muted'},'Verde: essencial · Amarelo: bem-estar · Vermelho: extra'),...rows.map(r=>el('div',{class:'priority-chart-row'},[el('div',{class:'kv'},[el('span',{},[el('i',{class:'flow-swatch',style:'background:'+r.color}),r.label]),el('span',{class:'number'},hidden?'•••':money(r.cents)+' · '+(total?Math.round(r.cents/total*100):0)+'%')]),el('div',{class:'priority-chart-track','aria-hidden':'true'},el('div',{style:'background:'+r.color+';width:'+(hidden?0:total?r.cents/total*100:0)+'%'}))])),!total&&el('p',{class:'small muted'},'Classifique suas despesas para acompanhar a divisão aqui.'),el('p',{class:'small muted'},'As cores indicam a prioridade. Gastos essenciais também precisam caber no seu orçamento.')]);
+}
 export function flowPanel(c){
  const kind=chartTypes.some(([value])=>value===c.state.preferences.flowChartType)?c.state.preferences.flowChartType:'line',hidden=c.state.preferences.hideAmounts,series=flowSeries(c.state,c.month),s=series.at(-1),slices=expenseSlices(c.state,c.month);
  const select=el('select',{id:'flow-chart-type','aria-label':'Tipo de gráfico financeiro',onChange:e=>{try{c.dispatch('preferences',{flowChartType:e.target.value});document.getElementById('flow-chart-type')?.focus()}catch(error){e.target.value=kind;c.notify(error.message,'error')}}},chartTypes.map(([value,label])=>el('option',{value},label)));select.value=kind;
@@ -35,5 +40,5 @@ export function flowPanel(c){
  const title=kind==='pie'?'Despesas por categoria':'Fluxo financeiro',sub=kind==='pie'?monthLabel(c.month):'Receitas e despesas nos últimos seis meses';
  const details=kind!=='pie'&&el('details',{class:'flow-values'},[el('summary',{},'Ver valores por mês'),el('div',{class:'table-wrap'},el('table',{},[el('thead',{},el('tr',{},['Mês','Receitas','Despesas'].map(label=>el('th',{},label)))),el('tbody',{},series.map(v=>el('tr',{},[el('td',{},monthLabel(v.month)),el('td',{class:'number'},money(v.incomeCents,hidden)),el('td',{class:'number'},money(v.expenseCents,hidden))])))]))]);
  const noFlow=series.every(v=>v.incomeCents===0&&v.expenseCents===0);
- return panel([panelHead(title,sub,control),el('div',{class:'chart-total number'},money(kind==='pie'?s.expenseCents:s.netCents,hidden)),el('p',{class:'small muted'},kind==='pie'?'Total de despesas do mês selecionado':'Resultado do mês selecionado'),kind==='pie'?pie(c,slices):noFlow?empty('Sem receitas ou despesas neste período','Registre um lançamento ou escolha outro mês.'):trend(c,kind,series),details,el('p',{class:'chart-desc'},kind==='pie'?'Inclui despesas e compras no cartão; transferências e pagamentos de fatura não entram novamente.':`No mês selecionado: ${money(s.incomeCents,hidden)} em receitas e ${money(s.expenseCents,hidden)} em despesas.`)],'flow-panel');
+ return panel([panelHead(title,sub,control),el('div',{class:'chart-total number'},money(kind==='pie'?s.expenseCents:s.netCents,hidden)),el('p',{class:'small muted'},kind==='pie'?'Total de despesas do mês selecionado':'Resultado do mês selecionado'),kind==='pie'?pie(c,slices):noFlow?empty('Sem receitas ou despesas neste período','Registre um lançamento ou escolha outro mês.'):trend(c,kind,series),details,priorityChart(c),el('p',{class:'chart-desc'},kind==='pie'?'Inclui despesas e compras no cartão; transferências e pagamentos de fatura não entram novamente.':`No mês selecionado: ${money(s.incomeCents,hidden)} em receitas e ${money(s.expenseCents,hidden)} em despesas.`)],'flow-panel');
 }
