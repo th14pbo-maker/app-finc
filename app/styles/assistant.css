@@ -37,4 +37,4 @@
 .btn-quick-income:hover{background:rgba(34,197,94,0.12)}
 .btn-quick-expense{color:#ef4444;border-color:rgba(239,68,68,0.3)}
 .btn-quick-expense:hover{background:rgba(239,68,68,0.12)}
-@media(max-width:480px){.assistant-dialog{padding:18px}.assistant-controls{flex-direction:column;align-items:stretch}.assistant-actions{width:100%}.assistant-actions .btn{flex:1}}
+@media(max-width:768px){.assistant-dialog{width:calc(100% - 20px) !important;max-width:calc(100vw - 20px) !important;padding:18px 14px;margin:auto;border-radius:16px;box-sizing:border-box;overflow-x:hidden}.assistant-form textarea{font-size:16px !important;box-sizing:border-box;width:100%}.assistant-controls{flex-direction:column;align-items:stretch;gap:10px;width:100%}.assistant-mic{width:100%;justify-content:center;min-height:46px}.assistant-actions{width:100%;gap:8px}.assistant-actions .btn{width:100% !important;flex:1;min-height:44px;justify-content:center}.assistant-quick-types{flex-direction:column;gap:8px;width:100%}.assistant-quick-types .btn{width:100%;min-height:44px;justify-content:center}}
