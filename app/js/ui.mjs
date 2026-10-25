@@ -98,7 +98,7 @@ export function metric(label,value,foot,ico,cls='',footClass='',onClick=null){
       e.stopPropagation();
       onClick(e);
      }
-    },[icon('mic'),el('span',{},'Ditar / Editar')]),
+    },[icon('mic'),el('span',{},'Ditar')]),
     icon(ico)
    ])
   ]),

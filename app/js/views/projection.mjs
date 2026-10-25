@@ -17,22 +17,30 @@ function chart(p){
  return svg;
 }
 
-export function projectionPanel(c){
+export function projectionPanel(c,opts={}){
  let horizon=12;
- const body=el('div');
+ const body=el('div',{class:'projection-body'});
  const select=el('select',{'aria-label':'Horizonte da projeção',onChange:e=>{horizon=Number(e.target.value);draw()}},[3,6,12].map(n=>el('option',{value:n},n+' meses')));select.value=12;
  const draw=()=>{
   const p=projectBalance(c.state,c.month,horizon),hidden=c.state.preferences.hideAmounts;
-  const tile=(label,value,cls='')=>el('div',{},[el('span',{class:'small muted'},label),el('strong',{class:'number '+cls},money(value,hidden))]);
   body.replaceChildren(...[
-   el('div',{class:'projection-summary'},[tile('Base no início do mês',p.openingCents),tile('Saldo ao final do período',p.closingCents,p.closingCents<0?'negative':tone(p.netCents)),tile('Impacto no saldo',p.netCents,tone(p.netCents))]),
-   el('p',{class:'small muted'},'De '+monthLabel(c.month)+' até '+monthLabel(p.months.at(-1).month)+'.'),
+   el('div',{class:'projection-summary-minimal'},[
+    el('div',{},[
+     el('div',{class:'chart-total number '+(p.closingCents<0?'negative':tone(p.netCents))},money(p.closingCents,hidden)),
+     el('p',{class:'small muted'},'Previsão em '+horizon+' meses • '+(p.netCents>=0?'+':'')+money(p.netCents,hidden)+' no período')
+    ]),
+    el('div',{class:'projection-mini-kpis'},[
+     el('div',{},[el('span',{class:'small muted'},'Entradas'),el('strong',{class:'number positive'},'+ '+money(p.incomeCents,hidden))]),
+     el('div',{},[el('span',{class:'small muted'},'Saídas/Faturas'),el('strong',{class:'number negative'},'− '+money(p.expenseCents,hidden))]),
+     el('label',{class:'flow-chart-control horizon-control'},[el('span',{},'Horizonte'),select])
+    ])
+   ]),
    el('div',{class:'chart-legend flow-legend'},[['Saldo sobe','var(--success)'],['Saldo cai','var(--error)'],['Estável','var(--muted)']].map(([label,shade])=>el('span',{},[el('i',{class:'flow-swatch',style:'background:'+shade}),label]))),
    hidden?el('p',{class:'small muted'},'Exiba os valores para visualizar a curva do saldo.'):chart(p),
    p.months.some(m=>m.balanceCents<0)&&el('p',{class:'notice projection-warning'},[icon('wallet'),'A projeção indica saldo negativo em pelo menos um mês. Revise as saídas e receitas previstas.']),
-   el('div',{class:'projection-totals'},[tile('Entradas consideradas',p.incomeCents,'positive'),tile('Saídas e faturas consideradas',p.expenseCents,'negative')]),
    el('details',{class:'flow-values'},[el('summary',{},'Ver projeção mês a mês'),el('div',{class:'table-wrap'},el('table',{},[el('thead',{},el('tr',{},['Mês','Entradas','Saídas e faturas','Saldo previsto'].map(v=>el('th',{},v)))),el('tbody',{},p.months.map(m=>el('tr',{},[el('td',{},monthLabel(m.month)),el('td',{class:'number positive'},money(m.incomeCents,hidden)),el('td',{class:'number negative'},money(m.expenseCents,hidden)),el('td',{class:'number '+(m.balanceCents<0?'negative':tone(m.changeCents))},money(m.balanceCents,hidden))])))]))])
   ].filter(Boolean));
  };draw();
+ if(opts.embedded) return body;
  return panel([panelHead('Seu saldo no futuro','Veja como suas escolhas alteram os próximos meses.',el('label',{class:'flow-chart-control'},[el('span',{},'Projetar'),select])),body],'projection-panel');
 }

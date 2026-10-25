@@ -89,8 +89,8 @@ textarea{font:inherit;background:#101010;border:1px solid #303030;border-radius:
 }
 .metric.metric-interactive:hover, .metric.metric-interactive:focus-visible {
   transform: translateY(-2px);
-  border-color: var(--accent);
-  box-shadow: 0 0 24px rgba(56, 189, 248, 0.16), 0 8px 24px rgba(0, 0, 0, 0.4);
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.12), 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 .metric.metric-interactive:active {
   transform: translateY(0);
@@ -105,11 +105,11 @@ textarea{font:inherit;background:#101010;border:1px solid #303030;border-radius:
   align-items: center;
   gap: 4px;
   font-size: 10px;
-  color: var(--accent);
-  background: rgba(56, 189, 248, 0.08);
-  border: 1px solid rgba(56, 189, 248, 0.25);
+  color: var(--secondary);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 999px;
-  padding: 2px 7px;
+  padding: 2px 8px;
   font-weight: 500;
   transition: all .2s ease;
   cursor: pointer;
@@ -125,13 +125,149 @@ textarea{font:inherit;background:#101010;border:1px solid #303030;border-radius:
 .metric.metric-interactive:hover .metric-hint,
 .metric.metric-interactive:hover .metric-hint-btn,
 .metric-hint-btn:hover {
-  background: rgba(56, 189, 248, 0.2);
-  border-color: var(--accent);
+  background: rgba(56, 189, 248, 0.16);
+  border-color: rgba(56, 189, 248, 0.4);
+  color: var(--accent);
 }
 @media (max-width: 767px) {
   .metric-hint span, .metric-hint-btn span {
     display: none;
   }
+}
+
+/* Evolution Tabs & Minimalist Panels */
+.evolution-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.chart-tabs {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  gap: 3px;
+}
+.chart-tab-btn {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all .2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.chart-tab-btn .icon {
+  width: 13px;
+  height: 13px;
+}
+.chart-tab-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+}
+.chart-tab-btn.active {
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(56, 189, 248, 0.25);
+}
+.evolution-panel .flow-body,
+.evolution-panel .projection-body {
+  margin-top: 6px;
+}
+.projection-summary-minimal,
+.flow-hero-summary {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.projection-mini-kpis {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 6px 12px;
+  border-radius: 10px;
+  flex-wrap: wrap;
+}
+.projection-mini-kpis>div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.projection-mini-kpis strong {
+  font-size: 12px;
+}
+.horizon-control {
+  margin-left: 4px;
+}
+
+/* Compact Sidebar Cards */
+.compact-card {
+  padding: 16px 20px !important;
+}
+.invoices-ok-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.positive-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 10px var(--success);
+  flex-shrink: 0;
+}
+.goal-compact-prompt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.insight-card {
+  background: linear-gradient(135deg, rgba(14, 30, 40, 0.5) 0%, rgba(8, 12, 16, 0.8) 100%) !important;
+  border: 1px solid rgba(56, 189, 248, 0.15) !important;
+  padding: 18px 20px !important;
+  border-radius: var(--r-lg);
+}
+.insight-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.insight-head .icon {
+  width: 15px;
+  height: 15px;
+}
+.insight-desc {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #9cb0bc;
+}
+.account-empty-prompt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0 4px;
 }
 
 /* Metric Quick Dialog */
