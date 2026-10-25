@@ -157,8 +157,9 @@ export function renderOverview(c){
   importBanner,
   header('Visão geral','Seu panorama financeiro em tempo real.',[
    c.period(),
+   c.openVoice ? btn('Falar lançamento',()=>c.openVoice(),'secondary hero-voice-btn','mic') : null,
    btn('Nova transação',()=>c.openTransaction(),'primary','plus')
-  ]),
+  ].filter(Boolean)),
   !c.state.accounts.length&&el('div',{class:'notice onboarding'},[
    el('div',{},[
     el('h3',{},'Vamos começar pelo seu primeiro saldo?'),

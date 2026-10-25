@@ -241,6 +241,7 @@ function render() {
     route: r,
     user,
     syncStatus,
+    openVoice: () => triggerAssistant(),
     renderImportConsent: () => {
       if (!syncManager?.hasVisitorData()) return null;
       if (typeof window !== 'undefined' && window.sessionStorage?.getItem('finance-os:dismiss-import')) return null;
@@ -386,11 +387,11 @@ function render() {
       iconBtn(theme === 'dark' ? 'sun' : 'moon', theme === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro', () => {
         try { dispatch('preferences', { theme: theme === 'dark' ? 'light' : 'dark' }); }
         catch (e) { toast(e.message, 'error'); }
-      }),
-      iconBtn('eye', state.preferences.hideAmounts ? 'Mostrar valores' : 'Ocultar valores', () => {
+      }, 'top-action-theme'),
+      iconBtn(state.preferences.hideAmounts ? 'eyeOff' : 'eye', state.preferences.hideAmounts ? 'Mostrar valores' : 'Ocultar valores', () => {
         try { dispatch('preferences', { hideAmounts: !state.preferences.hideAmounts }); }
         catch (e) { toast(e.message, 'error'); }
-      }),
+      }, 'top-action-eye' + (state.preferences.hideAmounts ? ' is-active' : '')),
       el('a', { href: user ? '#settings' : '#login', class: 'top-profile', 'aria-label': user ? 'Configurações e Perfil' : 'Entrar' }, userAvatar(state.preferences))
     ])
   ]);
