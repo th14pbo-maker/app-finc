@@ -21,27 +21,33 @@
       ]
     },
     {
-      "source": "/js/(.*)\\.mjs",
+      "source": "/js/:path*",
       "headers": [
         { "key": "Content-Type", "value": "text/javascript; charset=utf-8" },
         { "key": "Cache-Control", "value": "no-cache, must-revalidate" }
       ]
     },
     {
-      "source": "/assets/(.*)\\.woff2",
+      "source": "/styles/:path*",
       "headers": [
-        { "key": "Content-Type", "value": "font/woff2" },
+        { "key": "Content-Type", "value": "text/css; charset=utf-8" },
+        { "key": "Cache-Control", "value": "no-cache, must-revalidate" }
+      ]
+    },
+    {
+      "source": "/assets/:path*",
+      "headers": [
         { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
     },
     {
-      "source": "/manifest\\.webmanifest",
+      "source": "/manifest.webmanifest",
       "headers": [
         { "key": "Content-Type", "value": "application/manifest+json; charset=utf-8" }
       ]
     }
   ],
   "rewrites": [
-    { "source": "/((?!assets/|styles/|js/|manifest\\.webmanifest|sw\\.js|favicon\\.svg).*)", "destination": "/index.html" }
+    { "source": "/:path((?!assets/|styles/|js/|manifest\\.webmanifest|sw\\.js|favicon\\.svg).*)", "destination": "/index.html" }
   ]
 }
