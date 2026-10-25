@@ -38,6 +38,23 @@ export class SyncManager {
     if (typeof window !== 'undefined') {
       window.addEventListener('online', () => this.processQueue());
     }
+
+    // Trigger initial synchronization if an authenticated user already exists on boot
+    if (this.currentUser) {
+      if (typeof queueMicrotask === 'function') {
+        queueMicrotask(() => {
+          if (this.currentUser) {
+            this.handleAuthChange(this.currentUser);
+          }
+        });
+      } else {
+        setTimeout(() => {
+          if (this.currentUser) {
+            this.handleAuthChange(this.currentUser);
+          }
+        }, 0);
+      }
+    }
   }
 
   subscribeStatus(fn) {
@@ -77,7 +94,7 @@ export class SyncManager {
 
     // 2. Switching accounts or Logging out: Clean memory completely and switch store key
     if (this.store && typeof this.store.setUser === 'function') {
-      this.store.setUser(newUser);
+      this.store.setUser(newUser, initialState());
     }
 
     if (!newUser) {
@@ -273,6 +290,13 @@ export class SyncManager {
     } catch {
       return null;
     }
+  }
+
+  clearVisitorData() {
+    if (!this.storage) return;
+    try {
+      this.storage.removeItem(VISITOR_KEY);
+    } catch {}
   }
 
   /**

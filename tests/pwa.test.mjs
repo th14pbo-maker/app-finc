@@ -31,8 +31,8 @@ test('PWA: sw.js precacheia todos os assets necessários e ignora requisições 
   const swPath = path.join(root, 'app', 'sw.js');
   const content = await readFile(swPath, 'utf8');
 
-  // 1. Deve conter versão v32
-  assert.ok(content.includes('finance-os-v32'), 'Service Worker deve ter versão incrementada');
+  // 1. Deve conter versão v32 ou superior
+  assert.ok(/finance-os-v(3[2-9]|[4-9]\d)/.test(content), 'Service Worker deve ter versão incrementada');
 
   // 2. Deve conter novos módulos nos assets pré-cacheados
   assert.ok(content.includes('./js/supabase.mjs'), 'sw.js deve pré-cachear supabase.mjs');

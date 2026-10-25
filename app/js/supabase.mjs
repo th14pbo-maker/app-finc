@@ -24,8 +24,8 @@ export class SupabaseClient {
       if (!raw) return null;
       const s = JSON.parse(raw);
       if (s?.access_token && s?.user?.id) {
-        // If expired by more than 60s, return null
-        if (s.expires_at && Date.now() / 1000 > s.expires_at) {
+        // If expired and has no refresh token, discard session
+        if (s.expires_at && Date.now() / 1000 > s.expires_at && !s.refresh_token) {
           this.storage.removeItem(SESSION_KEY);
           return null;
         }
@@ -213,6 +213,32 @@ export class SupabaseClient {
     return { user: data };
   }
 
+  async refreshSession() {
+    if (!this.currentSession?.refresh_token) return null;
+    const url = `${this.config.url}/auth/v1/token?grant_type=refresh_token`;
+    try {
+      const res = await this.fetchFn(url, {
+        method: 'POST',
+        headers: {
+          'apikey': this.config.anonKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ refresh_token: this.currentSession.refresh_token })
+      });
+      if (!res.ok) {
+        return null;
+      }
+      const data = await res.json().catch(() => null);
+      if (data?.access_token) {
+        this._saveSession(data);
+        return data;
+      }
+    } catch (e) {
+      console.warn('Falha ao renovar token de sessão:', e.message);
+    }
+    return null;
+  }
+
   async signOut() {
     if (this.currentSession?.access_token) {
       const url = `${this.config.url}/auth/v1/logout`;
@@ -267,7 +293,14 @@ export class SupabaseClient {
     };
 
     const get = async (table, query = '') => {
-      const res = await this.fetchFn(`${this.config.url}/rest/v1/${table}${query}`, { headers });
+      let res = await this.fetchFn(`${this.config.url}/rest/v1/${table}${query}`, { headers });
+      if (res.status === 401 && this.currentSession?.refresh_token) {
+        const refreshed = await this.refreshSession();
+        if (refreshed?.access_token) {
+          headers.Authorization = `Bearer ${refreshed.access_token}`;
+          res = await this.fetchFn(`${this.config.url}/rest/v1/${table}${query}`, { headers });
+        }
+      }
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.message || `Erro ao carregar ${table} (${res.status})`);
@@ -340,7 +373,7 @@ export class SupabaseClient {
         displayName: prof.display_name || session.user?.user_metadata?.displayName || 'Você',
         theme: prof.theme || 'dark',
         hideAmounts: !!prof.hide_amounts,
-        avatarPreset: (prof.avatar_preset && prof.avatar_preset !== 'user') ? prof.avatar_preset : 'man-light',
+        avatarPreset: (prof.avatar_preset && prof.avatar_preset !== 'user') ? prof.avatar_preset : '',
         emoji: prof.avatar_emoji || '',
         avatar: prof.avatar_data || '',
         flowChartType: prof.flow_chart_type || 'line'
@@ -362,11 +395,22 @@ export class SupabaseClient {
     };
 
     const req = async (method, path, body = null) => {
-      const res = await this.fetchFn(`${this.config.url}/rest/v1/${path}`, {
+      let res = await this.fetchFn(`${this.config.url}/rest/v1/${path}`, {
         method,
         headers,
         body: body ? JSON.stringify(body) : null
       });
+      if (res.status === 401 && this.currentSession?.refresh_token) {
+        const refreshed = await this.refreshSession();
+        if (refreshed?.access_token) {
+          headers.Authorization = `Bearer ${refreshed.access_token}`;
+          res = await this.fetchFn(`${this.config.url}/rest/v1/${path}`, {
+            method,
+            headers,
+            body: body ? JSON.stringify(body) : null
+          });
+        }
+      }
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.message || `Erro de sincronização ${method} ${path} (${res.status})`);

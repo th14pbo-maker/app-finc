@@ -276,7 +276,12 @@ function render() {
             if (typeof window !== 'undefined' && window.sessionStorage) {
               window.sessionStorage.setItem('finance-os:dismiss-import', '1');
             }
-            toast('Dados locais preservados no navegador como cópia de segurança.');
+            toast('Aviso de importação ocultado nesta sessão.');
+            render();
+          }, 'ghost'),
+          btn('Descartar dados locais', () => {
+            syncManager?.clearVisitorData();
+            toast('Dados locais de visitante removidos deste dispositivo.');
             render();
           }, 'ghost')
         ])

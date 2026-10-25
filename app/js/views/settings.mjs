@@ -40,7 +40,14 @@ export function renderSettings(c) {
               } catch (err) {
                 c.notify(err.message, 'error');
               }
-            }, 'primary', 'download')
+            }, 'primary', 'download'),
+            btn('Descartar dados locais', () => {
+              confirmDialog('Descartar dados de visitante?', 'Os dados locais não vinculados serão removidos deste dispositivo.', () => {
+                syncManager?.clearVisitorData();
+                c.notify('Dados locais de visitante removidos.');
+                location.reload();
+              });
+            }, 'ghost')
           ])
         ])
       : null;

@@ -47,8 +47,8 @@ export function createStore(storage, seed, initialUser = null) {
       error = '';
       locked = false;
       const loaded = loadFromStorage(activeKey);
-      if (!loaded && defaultState) {
-        state = structuredClone(defaultState);
+      if (!loaded) {
+        state = structuredClone(defaultState || seed);
       }
       listeners.forEach(f => f());
     },
