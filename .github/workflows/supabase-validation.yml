@@ -83,17 +83,36 @@ jobs:
           echo "Connecting with API_URL: $API_URL"
           echo "Connecting with DB_URL: $DB_URL"
           
+          set -o pipefail
           SUPABASE_LIVE_TEST=1 \
           LOCAL_DATABASE_URL="$DB_URL" \
           SUPABASE_URL="$API_URL" \
           SUPABASE_ANON_KEY="$ANON_KEY" \
-          node --test --test-reporter=spec tests/supabase-live-e2e.test.mjs
+          node --test --test-reporter=spec tests/supabase-live-e2e.test.mjs 2>&1 | tee /tmp/e2e-live.log
 
       - name: 4. Execute browser tests on Chromium (Login, Signup, Settings & PWA)
         run: |
+          set -o pipefail
           CI=1 node local-server.mjs &
           sleep 3
-          BROWSER_TEST=1 APP_URL="http://127.0.0.1:8765" node --test --test-reporter=spec tests/browser-e2e.test.mjs
+          BROWSER_TEST=1 APP_URL="http://127.0.0.1:8765" node --test --test-reporter=spec tests/browser-e2e.test.mjs 2>&1 | tee /tmp/browser-e2e.log
+
+      - name: Generate Summary and Diagnostics
+        if: always()
+        run: |
+          echo "## 📊 Relatório de Validação Supabase & E2E" >> $GITHUB_STEP_SUMMARY
+          if [ -f /tmp/e2e-live.log ]; then
+            echo "### Supabase Live Auth & RLS Logs" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat /tmp/e2e-live.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ -f /tmp/browser-e2e.log ]; then
+            echo "### Browser E2E Logs (Chromium)" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat /tmp/browser-e2e.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
 
       - name: Stop Supabase stack
         if: always()

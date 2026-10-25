@@ -114,7 +114,32 @@ test('Supabase Live E2E: Fluxo completo com Auth, PostgREST, RLS e recuperação
     console.log('[E2E 5/7] Isolamento RLS entre contas 100% comprovado.');
 
     // 6. Teste Real da RPC import_user_state
-    console.log('[E2E 6/7] Testando RPC atômica import_user_state...');
+    // 6a. Validação de segurança: Deve rejeitar importação se o espaço financeiro não estiver vazio
+    console.log('[E2E 6/7] Validando que import_user_state rejeita espaço não vazio...');
+    await assert.rejects(
+      async () => {
+        await clientA.rpc('import_user_state', {
+          payload: {
+            members: [{ id: 'me', name: 'Titular 1' }],
+            accounts: [{ id: 'acc-imp-real', name: 'Conta Importada Real', initialCents: 1000, color: '#112233' }],
+            cards: [],
+            goals: [],
+            contributions: [],
+            transactions: [],
+            preferences: { displayName: 'Titular 1', theme: 'dark', hideAmounts: false }
+          },
+          p_import_id: `e2e-import-fail-${Date.now()}`
+        });
+      },
+      /não está vazio/
+    );
+    console.log('[E2E 6/7] Rejeição de espaço não-vazio confirmada.');
+
+    // 6b. Esvazia a conta de A para permitir a importação assistida inicial
+    await clientA.syncMutation('deleteAccount', accAId);
+
+    // 6c. Executa import_user_state no espaço agora limpo
+    console.log('[E2E 6/7] Testando RPC atômica import_user_state em espaço vazio...');
     const importRes = await clientA.rpc('import_user_state', {
       payload: {
         members: [{ id: 'me', name: 'Titular 1' }],
