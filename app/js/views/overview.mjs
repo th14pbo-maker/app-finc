@@ -158,6 +158,7 @@ export function renderOverview(c){
   header('Visão geral','Seu panorama financeiro em tempo real.',[
    c.period(),
    c.openVoice ? btn('Falar lançamento',()=>c.openVoice(),'secondary hero-voice-btn','mic') : null,
+   c.openStatementImport ? btn('Importar extrato',()=>c.openStatementImport(),'secondary hero-statement-btn','upload') : null,
    btn('Nova transação',()=>c.openTransaction(),'primary','plus')
   ].filter(Boolean)),
   !c.state.accounts.length&&el('div',{class:'notice onboarding'},[

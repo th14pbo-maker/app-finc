@@ -10,6 +10,7 @@ import {renderSettings,renderDemoEntry} from './views/settings.mjs';
 import {renderSidebarAssistant} from './views/sidebar-assistant.mjs';
 import {getSupabaseClient} from './supabase.mjs';
 import {initSyncManager} from './sync.mjs';
+import {openBankStatementDialog} from './bank-statement.mjs';
 
 let storage;
 try {
@@ -122,6 +123,15 @@ function dispatch(action, payload) {
     const errors = validateTransaction(s, payload);
     if (errors.length) throw Error(errors.join('\n'));
     upsert(s.transactions, payload);
+  } else if (action === 'importTransactions') {
+    if (!Array.isArray(payload) || !payload.length) throw Error('Nenhuma transação selecionada para importar.');
+    for (const t of payload) {
+      const errors = validateTransaction(s, t);
+      if (errors.length) throw Error(`Erro no lançamento "${t.description}": ${errors.join(', ')}`);
+    }
+    for (const t of payload) {
+      upsert(s.transactions, t);
+    }
   } else if (action === 'deleteTransaction') {
     s.transactions = s.transactions.filter(t => t.id !== payload);
   } else if (action === 'saveAccount') {
@@ -242,6 +252,7 @@ function render() {
     user,
     syncStatus,
     openVoice: () => triggerAssistant(),
+    openStatementImport: (accountId = null) => openBankStatementDialog(c, accountId),
     renderImportConsent: () => {
       if (!syncManager?.hasVisitorData()) return null;
       if (typeof window !== 'undefined' && window.sessionStorage?.getItem('finance-os:dismiss-import')) return null;
