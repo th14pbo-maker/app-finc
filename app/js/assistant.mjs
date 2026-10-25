@@ -29,7 +29,7 @@ function numberPrefix(text){
  if(norm(words.at(-1)||'')==='e')words.pop();return words.join(' ');
 }
 function amountPrefix(raw){
- let text=raw.trim().replace(/^(?:R\$|BRL)\s*/i,''),part=numberPrefix(text);
+ let text=raw.trim().replace(/^de\s+/i,'').trim().replace(/^(?:R\$|BRL)\s*/i,'').replace(/^de\s+/i,'').replace(/^\+\s*/,'').trim(),part=numberPrefix(text);
  if(!part)throw Error('Diga o valor logo após “gastei” ou “recebi”. Ex.: “Gastei 35,50 com ração”.');
  let cents;
  if(/^[-+]?\d/.test(part))cents=parseBrlCents(part);
@@ -71,28 +71,51 @@ function dateFrom(text,day){
  if(/\b(dias?|semanas?|mes|meses|anos?|feira|segunda|terca|quarta|quinta|sexta|sabado|domingo|janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|manha|tarde|noite)\b/.test(norm(rest)))throw Error('Nesta etapa, use hoje, ontem, amanhã ou uma data como 24/10/2026.');
  return {date,rest};
 }
+const INCOME_VERBS='recebi|recebido|recebidos|receber|recebimento|recebimentos|ganhei|ganho|ganhos|ganhar|entrou|entrar|entrada|entradas|entra|caiu|cair|deposito|depósito|depositos|depósitos|depositei|depositar|salario|salário|ordenado|holerite|renda|rendas|faturamento|faturei|lucro';
+const EXPENSE_VERBS='gastei|gasto|gastos|gastar|paguei|pago|pagos|pagar|pagamento|pagamentos|comprei|compra|compras|comprar|despesa|despesas|saida|saída|saidas|saídas|custou|custo|custos';
+const VERB_REGEX=new RegExp(`^(?:eu\\s+)?(${INCOME_VERBS}|${EXPENSE_VERBS})(?:\\s+|$)`,'i');
+const INCOME_CHECK=new RegExp(`^(${INCOME_VERBS})$`,'i');
 function draft(text,state,day){
- let cleaned=text.trim().replace(/^(?:(?:oh|ola|olá|oi|ei|opa|e aí|e ai|por favor|anota aí|anota ai|adiciona|registra|lanca|lança|lancar|lançar|cadastra|cadastrar|coloque|coloca|eu)\b[\s,]*)+/i,'').trim();
- const verb=cleaned.match(/^(?:eu\s+)?(gastei|paguei|comprei|gasto|despesa|saida|saída|custou|recebi|ganhei|receber|entrada|receita)(?:\s+|$)/i);
- if(!verb)return help();
+ let cleaned=text.trim().replace(/^(?:(?:oh|ola|olá|oi|ei|opa|e aí|e ai|por favor|anota aí|anota ai|anota|anotar|adiciona aí|adiciona ai|adiciona|adicionar|registra aí|registra ai|registra|registrar|lanca aí|lanca ai|lanca|lança aí|lança ai|lança|lancar|lançar|cadastra|cadastrar|coloque|coloca|bota aí|bota ai|bota|botar|inclui|incluir|salva aí|salva ai|salva|salvar|novo|nova|eu|pra ele|para ele|pro assistente|para o assistente)\b[\s,:]*)+/i,'').trim();
+ const verb=cleaned.match(VERB_REGEX);
+ let isIncome=false,remainder='';
+ if(verb){
+  isIncome=INCOME_CHECK.test(verb[1]);
+  remainder=cleaned.slice(verb[0].length);
+ }else{
+  const signMatch=cleaned.match(/^([+-])\s*/);
+  const rawWithoutSign=signMatch?cleaned.slice(signMatch[0].length):cleaned;
+  try{
+   const parsed=amountPrefix(rawWithoutSign);
+   if(signMatch){
+    isIncome=signMatch[1]==='+';
+   }else if(/\b(entrada|entradas|receita|receitas|salario|salário|recebimento|ganho|deposito|depósito)\b/i.test(parsed.rest)){
+    isIncome=true;
+   }else{
+    isIncome=false;
+   }
+   remainder=rawWithoutSign;
+  }catch{
+   return help();
+  }
+ }
  if(/\b(cartao|credito|debito|fatura|parcelas?|vezes|transferencia|todo|toda|mensal|semanal|dolares?|euros?|nao)\b/.test(norm(cleaned)))return help('Para cartão, fatura, transferência, recorrência ou outras moedas, use o formulário manual. Aqui preparo uma receita ou despesa única em reais.');
- const isIncome=/recebi|ganhei|receber|entrada|receita/i.test(verb[1]);
- const {cents,rest:initial}=amountPrefix(cleaned.slice(verb[0].length));
+ const {cents,rest:initial}=amountPrefix(remainder);
  let {date,rest}=dateFrom(initial,day),accountId=state.accounts.length===1?state.accounts[0].id:'';
  const account=rest.match(/\bna conta\s+(.+)$/i);
  if(account){const matches=state.accounts.filter(a=>norm(a.name)===norm(account[1]));if(matches.length!==1)throw Error('Não identifiquei essa conta. Use o nome exato cadastrado ou escolha a conta no formulário.');accountId=matches[0].id;rest=rest.slice(0,account.index).trim();}
- // Validate before extracting categories: a second amount must not hide in them.
  const secondAmount=new RegExp(`\\b(?:e|mais)\\s+(?:${[...Object.keys(small),...Object.keys(hundreds),'cem','mil'].join('|')})\\b`);
  if(/\d|\b(mil|milhao|milhoes|bilhao|bilhoes|reais|real|brl|centavos?|gastei|paguei|comprei|recebi|ganhei|menos|virgula)\b/.test(norm(rest))||secondAmount.test(norm(rest)))return help('Não consegui separar o valor do restante da frase. Use um único valor completo, como “Gastei 2.000 reais com aluguel” ou “Gastei 20 reais e 50 centavos com ração”.');
  let category='';const custom=rest.match(/\b(?:na )?categoria\s+(.+)$/i);
  if(custom){category=custom[1].trim();if(!category||category.length>80)throw Error('Use um nome de categoria de até 80 caracteres.');rest=rest.slice(0,custom.index).trim();}
- let description=rest.replace(/^(?:com|de|em|por|para|no|na)\s+/i,'').trim();
- if(!description){
-  description=isIncome?'Receita':'Despesa';
+ let description=rest.replace(/^(?:com|de|em|por|para|no|na|do|da|dos|das)\s+/i,'').trim();
+ if(!description||/^(entrada|entradas|receita|receitas|saida|saída|saidas|saídas|despesa|despesas|gasto|gastos)$/i.test(description)){
+  description=verb&&/salario|salário/i.test(verb[1])?'Salário':(isIncome?'Receita':'Despesa');
  }else if(description.length>140||/\d|\b(reais|real|brl|centavos|gastei|paguei|recebi|ganhei|menos|mais|virgula)\b/.test(norm(description))){
   return help('Informe uma descrição e apenas um valor por vez. Ex.: “Gastei 35 reais com ração hoje”.');
  }
- return {kind:'draft',transaction:{type:isIncome?'income':'expense',amountCents:cents,description,date,category:category||categoryMatch(description)||(isIncome?'Renda extra':'Outros'),accountId,priority:'',tags:[]},message:'Categoria sugerida; confira também o valor, a data e a conta antes de salvar.'};
+ const defaultCat=(verb&&/salario|salário/i.test(verb[1]))?'Salário':(isIncome?'Renda extra':'Outros');
+ return {kind:'draft',transaction:{type:isIncome?'income':'expense',amountCents:cents,description,date,category:category||categoryMatch(description)||defaultCat,accountId,priority:'',tags:[]},message:'Categoria sugerida; confira também o valor, a data e a conta antes de salvar.'};
 }
 function period(text,day,month){
  let remaining=text,result=month;

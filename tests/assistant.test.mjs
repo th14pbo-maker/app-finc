@@ -72,4 +72,16 @@ test('aceita comandos falados com BRL, saídas na padaria e entradas diretas',()
  assert.equal(t3.kind,'draft');assert.equal(t3.transaction.type,'expense');assert.equal(t3.transaction.amountCents,1000);
  const t4=ask('Recebi 500');
  assert.equal(t4.kind,'draft');assert.equal(t4.transaction.type,'income');assert.equal(t4.transaction.amountCents,50000);
+ const t5=ask('Entrou 20 BRL');
+ assert.equal(t5.kind,'draft');assert.equal(t5.transaction.type,'income');assert.equal(t5.transaction.amountCents,2000);assert.equal(t5.transaction.description,'Receita');
+ const t6=ask('Entrada de 20 BRL');
+ assert.equal(t6.kind,'draft');assert.equal(t6.transaction.type,'income');assert.equal(t6.transaction.amountCents,2000);
+ const t7=ask('Caiu 20 BRL');
+ assert.equal(t7.kind,'draft');assert.equal(t7.transaction.type,'income');assert.equal(t7.transaction.amountCents,2000);
+ const t8=ask('20 BRL de entrada');
+ assert.equal(t8.kind,'draft');assert.equal(t8.transaction.type,'income');assert.equal(t8.transaction.amountCents,2000);
+ const t9=ask('+ 20 BRL');
+ assert.equal(t9.kind,'draft');assert.equal(t9.transaction.type,'income');assert.equal(t9.transaction.amountCents,2000);
+ const t10=ask('Depósito de 50 reais');
+ assert.equal(t10.kind,'draft');assert.equal(t10.transaction.type,'income');assert.equal(t10.transaction.amountCents,5000);
 });
