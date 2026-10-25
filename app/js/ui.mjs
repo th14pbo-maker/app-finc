@@ -71,7 +71,27 @@ function transactionRow(c,initial,editable){
 }
 export function transactionTable(c,rows,editable=true){if(!rows.length)return empty('Nenhuma transação por aqui','Adicione um lançamento ou ajuste os filtros.');return el('div',{class:'table-wrap'},el('table',{},[el('thead',{},el('tr',{},[el('th',{},'Transação'),el('th',{class:'mobile-hide'},'Categoria'),el('th',{class:'desktop-col mobile-hide'},'Conta'),el('th',{},'Valor'),editable&&el('th',{},'Editar')])),el('tbody',{},rows.map(t=>transactionRow(c,t,editable)))]))}
 
-export function metric(label,value,foot,ico,cls='',footClass=''){return panel([el('div',{class:'metric-top'},[label,icon(ico)]),el('div',{class:'metric-value number'},value),el('div',{class:'metric-foot '+footClass},foot)],'metric '+cls)}
+export function metric(label,value,foot,ico,cls='',footClass='',onClick=null){
+ const elAttrs={class:'metric '+(onClick?'metric-interactive ':'')+cls};
+ if(onClick){
+  elAttrs.tabIndex=0;
+  elAttrs.role='button';
+  elAttrs['aria-label']='Editar ou ditar '+label;
+  elAttrs.onClick=onClick;
+  elAttrs.onKeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();onClick(e);}};
+ }
+ return panel([
+  el('div',{class:'metric-top'},[
+   label,
+   el('span',{class:'metric-top-action'},[
+    onClick&&el('span',{class:'metric-hint'},[icon('mic'),el('span',{},'Ditar / Editar')]),
+    icon(ico)
+   ])
+  ]),
+  el('div',{class:'metric-value number'},value),
+  el('div',{class:'metric-foot '+footClass},foot)
+ ],elAttrs);
+}
 export function runAction(action,notify=toast){try{return action()}catch(error){notify(error.message,'error');return false}}
 export function restoreFocus(previous,fallback=()=>document.getElementById('main')){if(previous?.isConnected)previous.focus();else fallback()?.focus({preventScroll:true})}
 export function userAvatar(p,cls=''){const preset=findAvatarPreset(p.avatarPreset);return el('div',{class:'avatar user-avatar '+cls,'aria-label':'Avatar de '+p.displayName},[p.avatar?el('img',{src:p.avatar,alt:'',class:'avatar-photo'}):preset?el('span',{class:'avatar-emoji','aria-hidden':'true'},preset.emoji):p.emoji?el('span',{class:'avatar-emoji','aria-hidden':'true'},p.emoji):el('span',{},p.displayName.slice(0,2).toUpperCase()),(p.avatar||preset)&&p.emoji&&el('span',{class:'avatar-badge','aria-hidden':'true'},p.emoji)])}
