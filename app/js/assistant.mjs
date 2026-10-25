@@ -72,11 +72,11 @@ function dateFrom(text,day){
  return {date,rest};
 }
 const cleanTag=raw=>String(raw||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9_-]/g,'').slice(0,40);
-const INCOME_VERBS='recebi|recebido|recebidos|receber|recebimento|recebimentos|ganhei|ganho|ganhos|ganhar|entrou|entrar|entrada|entradas|entra|caiu|cair|deposito|depósito|depositos|depósitos|depositei|depositar|salario|salário|ordenado|holerite|renda|rendas|faturamento|faturei|lucro';
-const EXPENSE_VERBS='gastei|gasto|gastos|gastar|paguei|pago|pagos|pagar|pagamento|pagamentos|comprei|compra|compras|comprar|despesa|despesas|saida|saída|saidas|saídas|custou|custo|custos';
+const INCOME_VERBS='recebi|recebido|recebidos|receber|recebimento|recebimentos|ganhei|ganho|ganhos|ganhar|entrou|entrar|entrada|entradas|entra|caiu|cair|deposito|depósito|depositos|depósitos|depositei|depositar|salario|salário|ordenado|holerite|renda|rendas|faturamento|faturei|lucro|creditou|credito|crédito';
+const EXPENSE_VERBS='gastei|gasto|gastos|gastar|paguei|pago|pagos|pagar|pagamento|pagamentos|comprei|compra|compras|comprar|despesa|despesas|saida|saída|saidas|saídas|saiu|sair|sairam|saíram|custou|custo|custos|debitou|debito|débito|cobrou|cobranca|cobrança';
 const VERB_REGEX=new RegExp(`^(?:eu\\s+)?(${INCOME_VERBS}|${EXPENSE_VERBS})(?=[\\s,.:;!?-]|$)`,'i');
 const INCOME_CHECK=new RegExp(`^(${INCOME_VERBS})$`,'i');
-const FILLERS='olha só|olha|tipo assim|tipo|e aí|e ai|aí|ai|quero lançar|quero anotar|queria lançar|queria anotar|preciso lançar|preciso anotar|anota aí|anota ai|anota|anotar|adiciona aí|adiciona ai|adiciona|adicionar|registra aí|registra ai|registra|registrar|lanca aí|lanca ai|lanca|lança aí|lança ai|lança|lancar|lançar|cadastra aí|cadastra|cadastrar|coloque|coloca aí|coloca|bota aí|bota|botar|inclui aí|inclui|incluir|salva aí|salva|salvar|novo|nova|eu|pra ele|para ele|pro assistente|para o assistente|ah|aah|eh|é|ó|entao|então|bom|cara|mano|velho|po|pô|poxa|opa|oh|ola|olá|oi|ei|só|por favor|pfv|pf';
+const FILLERS='teve uma|teve um|teve|houve uma|houve um|houve|foi uma|foi um|foi|olha só|olha|tipo assim|tipo|e aí|e ai|aí|ai|quero lançar|quero anotar|queria lançar|queria anotar|preciso lançar|preciso anotar|anota aí|anota ai|anota|anotar|adiciona aí|adiciona ai|adiciona|adicionar|registra aí|registra ai|registra|registrar|lanca aí|lanca ai|lanca|lança aí|lança ai|lança|lancar|lançar|cadastra aí|cadastra|cadastrar|coloque|coloca aí|coloca|bota aí|bota|botar|inclui aí|inclui|incluir|salva aí|salva|salvar|novo|nova|eu|pra ele|para ele|pro assistente|para o assistente|ah|aah|eh|é|ó|entao|então|bom|cara|mano|velho|po|pô|poxa|opa|oh|ola|olá|oi|ei|só|por favor|pfv|pf';
 const FILLER_REGEX=new RegExp(`^(?:(?:${FILLERS})(?=[\\s,.:;!?-]|$)[\\s,.:;!?-]*)+`,'i');
 function draft(text,state,day){
  let cleaned=text.trim().replace(/^[,\s.:;!?-]+/,'').trim();

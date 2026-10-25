@@ -371,12 +371,12 @@ function render() {
       el('button', {
         type: 'button',
         class: 'btn ghost assistant-trigger',
-        'aria-label': 'Abrir assistente por voz ou texto',
-        title: 'Assistente por voz ou texto',
+        'aria-label': 'Falar lançamento por voz ou texto',
+        title: 'Falar lançamento (Entrada ou Saída)',
         onClick: () => triggerAssistant()
       }, [
         icon('mic'),
-        el('span', {}, 'Assistente')
+        el('span', {}, 'Falar lançamento')
       ]),
       iconBtn(theme === 'dark' ? 'sun' : 'moon', theme === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro', () => {
         try { dispatch('preferences', { theme: theme === 'dark' ? 'light' : 'dark' }); }

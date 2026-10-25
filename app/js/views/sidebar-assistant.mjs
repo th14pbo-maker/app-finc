@@ -115,8 +115,8 @@ export function renderSidebarAssistant(c){
   const head=el('div',{class:'sidebar-assistant-head'},[
    el('div',{class:`accent-badge ${listening?'is-listening':''}`},[icon('mic')]),
    el('div',{},[
-    el('strong',{},'Assistente'),
-    el('span',{class:'status-indicator'},listening?'Ouvindo agora…':'Voz e texto')
+    el('strong',{},'Falar lançamento'),
+    el('span',{class:'status-indicator'},listening?'Ouvindo agora…':'Entrada ou saída')
    ])
   ]);
 

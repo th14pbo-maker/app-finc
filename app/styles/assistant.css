@@ -1,29 +1,40 @@
-.assistant-dialog{width:min(600px,calc(100% - 24px));padding:28px}
+.assistant-dialog{width:min(560px,calc(100% - 24px));padding:26px}
 .assistant-dialog .dialog-head{margin-bottom:12px;align-items:flex-start}
-.assistant-eyebrow{display:flex;align-items:center;gap:7px;color:var(--accent);font-size:10px;letter-spacing:1.8px;margin-bottom:12px}
-.assistant-intro{margin-bottom:22px;max-width:420px}
-.assistant-form>label{display:block;font-size:12px;margin-bottom:10px;color:var(--secondary)}
-.assistant-form textarea{display:block;width:100%;resize:vertical;min-height:100px;max-height:220px;border:1px solid var(--color-border);border-radius:12px;background:var(--color-surface-raised);color:var(--text);font:inherit;padding:14px;line-height:1.6;margin-bottom:8px}
+.assistant-eyebrow{display:flex;align-items:center;gap:7px;color:var(--accent);font-size:10px;font-weight:600;letter-spacing:1.8px;margin-bottom:8px}
+.assistant-intro{margin-bottom:18px;max-width:440px;color:var(--muted);font-size:13px;line-height:1.5}
+.assistant-form>label{display:block;font-size:12px;margin-bottom:8px;color:var(--text);font-weight:500}
+.assistant-form textarea{display:block;width:100%;resize:vertical;min-height:85px;max-height:180px;border:1px solid var(--color-border);border-radius:12px;background:var(--color-surface-raised);color:var(--text);font:inherit;padding:12px 14px;line-height:1.5;margin-bottom:10px}
 .assistant-form textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.assistant-controls{display:flex;justify-content:space-between;gap:12px;margin:18px 0 10px}
-.assistant-mic.is-listening{color:var(--error);border-color:var(--error);background:color-mix(in srgb,var(--error) 8%,transparent)}
-.assistant-status{font-size:12px;color:var(--secondary);min-height:18px;margin-bottom:20px}
-.assistant-examples{display:flex;flex-wrap:wrap;gap:8px}
-.assistant-examples .btn{font-size:11px;line-height:1.5;padding:8px 10px;white-space:normal;text-align:left;border:1px solid var(--color-border);border-radius:9px}
+.assistant-controls{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0 14px;flex-wrap:wrap}
+.assistant-mic{padding:10px 18px;font-size:13px;font-weight:600;border-radius:10px;display:inline-flex;align-items:center;gap:8px}
+.assistant-mic.is-listening{color:#ef4444;border-color:#ef4444;background:rgba(239,68,68,0.12);animation:pulse-listening 1.5s infinite ease-in-out}
+@keyframes pulse-listening{
+  0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.4)}
+  50%{box-shadow:0 0 0 8px rgba(239,68,68,0)}
+}
+.assistant-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.assistant-status{font-size:12px;color:var(--muted);min-height:18px;margin:6px 0 16px;display:flex;align-items:center;gap:6px}
+.assistant-examples{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.assistant-examples .btn{font-size:11px;line-height:1.4;padding:6px 10px;white-space:normal;text-align:left;border:1px solid var(--color-border);border-radius:8px;background:rgba(255,255,255,0.03)}
 .assistant-result:empty{display:none}
-.assistant-result{margin-top:22px;border-top:1px solid var(--color-border);padding-top:20px}
-.assistant-help{color:var(--secondary);line-height:1.7}
-.assistant-answer{display:flex;flex-direction:column;gap:8px}
-.assistant-answer>strong,.assistant-draft>strong{display:block;font-size:30px;font-weight:500;letter-spacing:-.7px}
-.assistant-draft-label{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--accent);margin-bottom:12px}
-.assistant-draft h3{overflow-wrap:anywhere}
-.assistant-draft dl{display:grid;grid-template-columns:1fr 1fr;gap:12px 18px;margin:16px 0}
-.assistant-draft dt{font-size:11px;color:var(--muted)}
-.assistant-draft dd{margin:3px 0 0;font-size:13px;overflow-wrap:anywhere}
-.assistant-draft-actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
-.assistant-draft-actions .btn{flex:1;min-width:170px}
-.assistant-account-select{background:var(--color-surface-raised);border:1px solid var(--color-border);color:var(--text);border-radius:8px;padding:6px 10px;font-size:12px;max-width:100%}
-.assistant-details{border-top:1px solid var(--color-border);margin-top:24px;padding-top:16px;color:var(--muted);font-size:11px;line-height:1.7}
-.assistant-details summary{cursor:pointer;color:var(--secondary)}
-.assistant-details p{margin-top:10px}
-@media(max-width:480px){.assistant-dialog{padding:20px}.assistant-dialog .dialog-head h2{font-size:20px}.assistant-draft dl{grid-template-columns:1fr 1fr}.assistant-controls .btn{flex:1}}
+.assistant-result{margin-top:16px;border-top:1px solid var(--color-border);padding-top:16px}
+.assistant-help{color:var(--secondary);line-height:1.6;font-size:13px}
+.assistant-success-box{background:var(--color-surface-raised);border:1px solid var(--color-border);border-radius:14px;padding:20px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}
+.assistant-success-box.income{border-color:rgba(34,197,94,0.3);background:rgba(34,197,94,0.06)}
+.assistant-success-box.expense{border-color:rgba(239,68,68,0.3);background:rgba(239,68,68,0.06)}
+.assistant-success-icon{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-size:20px}
+.assistant-success-box.income .assistant-success-icon{background:rgba(34,197,94,0.15);color:#22c55e}
+.assistant-success-box.expense .assistant-success-icon{background:rgba(239,68,68,0.15);color:#ef4444}
+.assistant-success-title{font-size:18px;font-weight:600;margin:0}
+.assistant-success-amount{font-size:28px;font-weight:700;letter-spacing:-0.5px}
+.assistant-success-box.income .assistant-success-amount{color:#22c55e}
+.assistant-success-box.expense .assistant-success-amount{color:#ef4444}
+.assistant-success-detail{font-size:12px;color:var(--muted);margin:0}
+.assistant-success-actions{display:flex;gap:10px;margin-top:12px;width:100%;justify-content:center;flex-wrap:wrap}
+.assistant-quick-types{display:flex;gap:8px;margin-top:12px;width:100%}
+.assistant-quick-types .btn{flex:1}
+.btn-quick-income{color:#22c55e;border-color:rgba(34,197,94,0.3)}
+.btn-quick-income:hover{background:rgba(34,197,94,0.12)}
+.btn-quick-expense{color:#ef4444;border-color:rgba(239,68,68,0.3)}
+.btn-quick-expense:hover{background:rgba(239,68,68,0.12)}
+@media(max-width:480px){.assistant-dialog{padding:18px}.assistant-controls{flex-direction:column;align-items:stretch}.assistant-actions{width:100%}.assistant-actions .btn{flex:1}}

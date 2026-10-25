@@ -1,5 +1,5 @@
 // Finance OS Service Worker — Offline-first local capability
-const CACHE_NAME = 'finance-os-v30';
+const CACHE_NAME = 'finance-os-v31';
 const PRECACHE_ASSETS = [
   './',
   './index.html',
