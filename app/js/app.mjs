@@ -8,6 +8,7 @@ import {renderTransactions,transactionForm} from './views/transactions.mjs';
 import {renderCards} from './views/cards.mjs';
 import {renderGoals} from './views/goals.mjs';
 import {renderSettings,renderDemoEntry} from './views/settings.mjs';
+import {renderSidebarAssistant} from './views/sidebar-assistant.mjs';
 let storage;try{storage=window.localStorage}catch{storage={getItem:()=>{throw Error('blocked')},setItem:()=>{throw Error('blocked')}}}
 const store=createStore(storage,initialState());let month=monthNow();
 const nav=[['overview','Visão geral','dashboard'],['accounts','Contas','wallet'],['cards','Cartões','card'],['transactions','Transações','arrows'],['goals','Metas','target'],['settings','Configurações','settings']];
@@ -35,14 +36,7 @@ function render(){const state=store.getState(),r=route();const theme=state.prefe
 const brand=cls=>el('a',{href:'#overview',class:'brand '+(cls||''),'aria-label':'Finance OS, início'},[el('div',{class:'brand-mark'},'f'),el('div',{},['finance',el('span',{},'os')])]);
 const navLink=([id,label,ico])=>el('a',{href:'#'+id,class:r===id?'active':'','aria-label':label,'aria-current':r===id?'page':null},[icon(ico),el('span',{},label)]);
 const triggerAssistant=async(prefill='')=>{try{const{openAssistant}=await import('./views/assistant.mjs');const dialog=openAssistant({...c,state:store.getState(),month});if(prefill&&dialog){const textarea=dialog.querySelector('textarea');if(textarea){textarea.value=prefill;dialog.querySelector('form')?.dispatchEvent(new Event('submit',{cancelable:true}))}}}catch{toast('Não foi possível abrir o assistente.','error')}};
-const assistantSidebarCard=el('div',{class:'sidebar-assistant-card'},[
-  el('div',{class:'sidebar-assistant-head'},[
-    el('div',{class:'accent-badge'},[icon('mic')]),
-    el('div',{},[el('strong',{},'Assistente'),el('span',{class:'status-indicator'},'Voz e texto')])
-  ]),
-  el('p',{class:'sidebar-assistant-desc'},'Fale ou digite entradas e saídas rápidas.'),
-  el('button',{type:'button',class:'btn primary sidebar-assistant-btn','aria-label':'Abrir assistente por voz ou texto',onClick:()=>triggerAssistant()},[icon('mic'),el('span',{},'Falar ou Registrar')])
-]);
+const assistantSidebarCard=renderSidebarAssistant(c);
 const sidebar=el('aside',{class:'sidebar'},[brand(),workspaceMenu(c),el('p',{class:'nav-label'},'PRINCIPAL'),el('nav',{class:'nav','aria-label':'Navegação principal'},nav.filter(([id])=>id!=='settings').map(navLink)),el('div',{class:'nav-separator'}),el('p',{class:'nav-label'},'SEU ESPAÇO'),el('nav',{class:'nav','aria-label':'Seu espaço'},nav.filter(([id])=>id==='settings').map(navLink)),el('div',{class:'sidebar-bottom'},[assistantSidebarCard,el('a',{class:'profile-link',href:'#settings'},[userAvatar(state.preferences),el('div',{class:'grow'},[el('div',{class:'small'},state.preferences.displayName),el('small',{},'Espaço pessoal')]),icon('chevron')])])]);
 const title=nav.find(n=>n[0]===r)?.[1]||'Bem-vindo';const top=el('header',{class:'topbar'},[el('div',{class:'breadcrumb'},[icon('home'),el('span',{},'/'),el('strong',{},title)]),brand('mobile-brand'),el('div',{class:'top-actions'},[el('span',{class:'demo-badge'},'MODO LOCAL'),el('button',{type:'button',class:'btn ghost assistant-trigger','aria-label':'Abrir assistente por voz ou texto',title:'Assistente por voz ou texto',onClick:()=>triggerAssistant()},[icon('mic'),el('span',{},'Assistente')]),iconBtn(theme==='dark'?'sun':'moon',theme==='dark'?'Ativar modo claro':'Ativar modo escuro',()=>{try{dispatch('preferences',{theme:theme==='dark'?'light':'dark'})}catch(e){toast(e.message,'error')}}),iconBtn('eye',state.preferences.hideAmounts?'Mostrar valores':'Ocultar valores',()=>{try{dispatch('preferences',{hideAmounts:!state.preferences.hideAmounts})}catch(e){toast(e.message,'error')}}),el('a',{href:'#settings',class:'top-profile','aria-label':'Editar perfil'},userAvatar(state.preferences))])]);
 let content;try{content=(views[r]||(()=>empty('Página não encontrada','Use a navegação para continuar.')))(c)}catch(e){content=empty('Não foi possível exibir esta área',e.message)}
