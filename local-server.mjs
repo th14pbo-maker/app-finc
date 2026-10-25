@@ -35,6 +35,7 @@ const MIME_TYPES = {
 };
 
 function openBrowser(targetUrl) {
+  if (process.env.CI || process.env.NO_OPEN) return;
   const start = process.platform === 'darwin' ? 'open' :
                 process.platform === 'win32' ? 'start ""' : 'xdg-open';
   exec(`${start} "${targetUrl}"`);

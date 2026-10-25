@@ -40,6 +40,16 @@ DROP POLICY IF EXISTS "allowed_emails_public_read" ON public.allowed_emails;
 -- A lista de emails autorizados e anotações NUNCA é consultável via API cliente
 REVOKE ALL ON TABLE public.allowed_emails FROM public, anon, authenticated;
 GRANT ALL ON TABLE public.allowed_emails TO service_role;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'supabase_auth_admin') THEN
+    GRANT ALL ON TABLE public.allowed_emails TO supabase_auth_admin;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'postgres') THEN
+    GRANT ALL ON TABLE public.allowed_emails TO postgres;
+  END IF;
+END;
+$$;
 
 -- Trigger SECURITY DEFINER com search_path sanitizado para validar novos cadastros
 CREATE OR REPLACE FUNCTION public.check_user_registration_allowed()
@@ -61,6 +71,16 @@ $$;
 
 REVOKE ALL ON FUNCTION public.check_user_registration_allowed() FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.check_user_registration_allowed() TO service_role;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'supabase_auth_admin') THEN
+    GRANT EXECUTE ON FUNCTION public.check_user_registration_allowed() TO supabase_auth_admin;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'postgres') THEN
+    GRANT EXECUTE ON FUNCTION public.check_user_registration_allowed() TO postgres;
+  END IF;
+END;
+$$;
 
 DROP TRIGGER IF EXISTS on_auth_user_created_whitelist ON auth.users;
 CREATE TRIGGER on_auth_user_created_whitelist
@@ -116,6 +136,18 @@ $$;
 
 REVOKE ALL ON FUNCTION public.handle_new_user_profile() FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.handle_new_user_profile() TO service_role;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'supabase_auth_admin') THEN
+    GRANT ALL ON TABLE public.profiles TO supabase_auth_admin;
+    GRANT EXECUTE ON FUNCTION public.handle_new_user_profile() TO supabase_auth_admin;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'postgres') THEN
+    GRANT ALL ON TABLE public.profiles TO postgres;
+    GRANT EXECUTE ON FUNCTION public.handle_new_user_profile() TO postgres;
+  END IF;
+END;
+$$;
 
 DROP TRIGGER IF EXISTS on_auth_user_created_profile ON auth.users;
 CREATE TRIGGER on_auth_user_created_profile

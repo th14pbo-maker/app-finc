@@ -92,7 +92,15 @@ export class SupabaseClient {
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       const msg = data.msg || data.message || data.error_description || '';
-      if (msg.includes('convite') || msg.includes('allowed_emails') || msg.includes('Database error') || res.status === 400 || res.status === 422) {
+      if (
+        msg.includes('convite') ||
+        msg.includes('allowed_emails') ||
+        msg.includes('Database error') ||
+        msg.includes('saving new user') ||
+        msg.includes('não autorizado') ||
+        msg.includes('restrito') ||
+        res.status >= 400
+      ) {
         throw new Error('Acesso restrito: este e-mail não possui convite autorizado na lista da família.');
       }
       throw new Error(msg || 'Não foi possível concluir o cadastro.');
@@ -348,7 +356,7 @@ export class SupabaseClient {
       'apikey': this.config.anonKey,
       'Authorization': `Bearer ${session.access_token}`,
       'Content-Type': 'application/json',
-      'Prefer': 'return=minimal'
+      'Prefer': 'return=minimal, resolution=merge-duplicates'
     };
 
     const req = async (method, path, body = null) => {

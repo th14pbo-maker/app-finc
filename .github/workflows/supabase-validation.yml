@@ -29,7 +29,7 @@ jobs:
       - name: Install dependencies
         run: |
           npm --prefix verification ci
-          npm install --no-save playwright
+          npm install --no-save playwright pg
           npx playwright install --with-deps chromium
 
       - name: Setup Supabase CLI
@@ -59,22 +59,41 @@ jobs:
 
       - name: 3. Execute live Supabase Auth, PostgREST & RLS End-to-End tests
         run: |
-          STATUS_JSON=$(supabase status -o json)
-          ANON_KEY=$(echo "$STATUS_JSON" | jq -r .ANON_KEY)
-          API_URL=$(echo "$STATUS_JSON" | jq -r .API_URL)
-          DB_URL=$(echo "$STATUS_JSON" | jq -r .DB_URL)
+          STATUS_JSON=$(supabase status -o json 2>/dev/null || echo "{}")
+          echo "Supabase Status JSON:"
+          echo "$STATUS_JSON"
+          
+          ANON_KEY=$(echo "$STATUS_JSON" | jq -r '.ANON_KEY // .anon_key // .PUBLISHABLE_KEY // .publishable_key // empty')
+          API_URL=$(echo "$STATUS_JSON" | jq -r '.API_URL // .api_url // empty')
+          DB_URL=$(echo "$STATUS_JSON" | jq -r '.DB_URL // .db_url // empty')
+          
+          if [ -z "$ANON_KEY" ] || [ "$ANON_KEY" = "null" ]; then
+            ANON_KEY=$(supabase status | grep -i "anon key" | head -n 1 | awk '{print $NF}' | tr -d '\r')
+          fi
+          if [ -z "$ANON_KEY" ] || [ "$ANON_KEY" = "null" ]; then
+            ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0"
+          fi
+          if [ -z "$API_URL" ] || [ "$API_URL" = "null" ]; then
+            API_URL="http://127.0.0.1:54321"
+          fi
+          if [ -z "$DB_URL" ] || [ "$DB_URL" = "null" ]; then
+            DB_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+          fi
+          
+          echo "Connecting with API_URL: $API_URL"
+          echo "Connecting with DB_URL: $DB_URL"
           
           SUPABASE_LIVE_TEST=1 \
           LOCAL_DATABASE_URL="$DB_URL" \
           SUPABASE_URL="$API_URL" \
           SUPABASE_ANON_KEY="$ANON_KEY" \
-          node --test tests/supabase-live-e2e.test.mjs
+          node --test --test-reporter=spec tests/supabase-live-e2e.test.mjs
 
       - name: 4. Execute browser tests on Chromium (Login, Signup, Settings & PWA)
         run: |
-          node local-server.mjs &
+          CI=1 node local-server.mjs &
           sleep 3
-          BROWSER_TEST=1 APP_URL="http://127.0.0.1:8765" node --test tests/browser-e2e.test.mjs
+          BROWSER_TEST=1 APP_URL="http://127.0.0.1:8765" node --test --test-reporter=spec tests/browser-e2e.test.mjs
 
       - name: Stop Supabase stack
         if: always()
