@@ -66,7 +66,7 @@ export function openAssistant(c){
       cardId:null,
       invoiceMonth:null,
       category:t.category,
-      tags:[],
+      tags:t.tags||[],
       priority:'',
       memberId:c.state.members.find(m=>m.id==='me')?.id||c.state.members[0]?.id
      });

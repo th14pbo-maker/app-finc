@@ -85,3 +85,28 @@ test('aceita comandos falados com BRL, saídas na padaria e entradas diretas',()
  const t10=ask('Depósito de 50 reais');
  assert.equal(t10.kind,'draft');assert.equal(t10.transaction.type,'income');assert.equal(t10.transaction.amountCents,5000);
 });
+
+test('extrai hashtags faladas, escritas e automáticas para serviços e locais',()=>{
+ const t1=ask('Gastei 35 BRL de Uber');
+ assert.equal(t1.kind,'draft');assert.equal(t1.transaction.amountCents,3500);
+ assert.equal(t1.transaction.description,'Uber');assert.equal(t1.transaction.category,'Transporte por aplicativo');
+ assert.deepEqual(t1.transaction.tags,['uber']);
+
+ const t2=ask('gastei 10 BRL com pão na padaria');
+ assert.equal(t2.kind,'draft');assert.equal(t2.transaction.amountCents,1000);
+ assert.equal(t2.transaction.category,'Padaria');
+ assert.deepEqual(t2.transaction.tags,['padaria']);
+
+ const t3=ask('Ah , gastei 10 BRL de pão no Thiago');
+ assert.equal(t3.kind,'draft');assert.equal(t3.transaction.amountCents,1000);
+ assert.equal(t3.transaction.description,'pão no Thiago');
+ assert.deepEqual(t3.transaction.tags,['thiago']);
+
+ const t4=ask('Gastei 10 BRL de pão hashtag padaria');
+ assert.equal(t4.kind,'draft');assert.equal(t4.transaction.description,'pão');
+ assert.deepEqual(t4.transaction.tags,['padaria']);
+
+ const t5=ask('Gastei 35 BRL de Uber hashtag transporte');
+ assert.equal(t5.kind,'draft');assert.equal(t5.transaction.description,'Uber');
+ assert.deepEqual(t5.transaction.tags,['transporte','uber']);
+});

@@ -43,7 +43,7 @@ export function renderSidebarAssistant(c){
      cardId:null,
      invoiceMonth:null,
      category:t.category,
-     tags:[],
+     tags:t.tags||[],
      priority:'',
      memberId:c.state.members.find(m=>m.id==='me')?.id||c.state.members[0]?.id
     };
@@ -52,7 +52,8 @@ export function renderSidebarAssistant(c){
     const typeLabel=isIncome?'Entrada':'Saída';
     const formattedAmount=money(t.amountCents,false);
     const successTitle=`✓ ${typeLabel} de ${formattedAmount} adicionada!`;
-    const detail=`${t.description} • ${t.category} (${account.name})`;
+    const tagsBadge=t.tags?.length ? ' • ' + t.tags.map(tag=>'#'+tag).join(' ') : '';
+    const detail=`${t.description} • ${t.category} (${account.name})${tagsBadge}`;
     showFeedback('success',successTitle,detail,isIncome);
     c.notify(`${typeLabel} de ${formattedAmount} adicionada com sucesso!`,'positive');
    }

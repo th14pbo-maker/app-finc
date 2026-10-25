@@ -71,12 +71,16 @@ function dateFrom(text,day){
  if(/\b(dias?|semanas?|mes|meses|anos?|feira|segunda|terca|quarta|quinta|sexta|sabado|domingo|janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|manha|tarde|noite)\b/.test(norm(rest)))throw Error('Nesta etapa, use hoje, ontem, amanhã ou uma data como 24/10/2026.');
  return {date,rest};
 }
+const cleanTag=raw=>String(raw||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9_-]/g,'').slice(0,40);
 const INCOME_VERBS='recebi|recebido|recebidos|receber|recebimento|recebimentos|ganhei|ganho|ganhos|ganhar|entrou|entrar|entrada|entradas|entra|caiu|cair|deposito|depósito|depositos|depósitos|depositei|depositar|salario|salário|ordenado|holerite|renda|rendas|faturamento|faturei|lucro';
 const EXPENSE_VERBS='gastei|gasto|gastos|gastar|paguei|pago|pagos|pagar|pagamento|pagamentos|comprei|compra|compras|comprar|despesa|despesas|saida|saída|saidas|saídas|custou|custo|custos';
-const VERB_REGEX=new RegExp(`^(?:eu\\s+)?(${INCOME_VERBS}|${EXPENSE_VERBS})(?:\\s+|$)`,'i');
+const VERB_REGEX=new RegExp(`^(?:eu\\s+)?(${INCOME_VERBS}|${EXPENSE_VERBS})(?=[\\s,.:;!?-]|$)`,'i');
 const INCOME_CHECK=new RegExp(`^(${INCOME_VERBS})$`,'i');
+const FILLERS='olha só|olha|tipo assim|tipo|e aí|e ai|aí|ai|quero lançar|quero anotar|queria lançar|queria anotar|preciso lançar|preciso anotar|anota aí|anota ai|anota|anotar|adiciona aí|adiciona ai|adiciona|adicionar|registra aí|registra ai|registra|registrar|lanca aí|lanca ai|lanca|lança aí|lança ai|lança|lancar|lançar|cadastra aí|cadastra|cadastrar|coloque|coloca aí|coloca|bota aí|bota|botar|inclui aí|inclui|incluir|salva aí|salva|salvar|novo|nova|eu|pra ele|para ele|pro assistente|para o assistente|ah|aah|eh|é|ó|entao|então|bom|cara|mano|velho|po|pô|poxa|opa|oh|ola|olá|oi|ei|só|por favor|pfv|pf';
+const FILLER_REGEX=new RegExp(`^(?:(?:${FILLERS})(?=[\\s,.:;!?-]|$)[\\s,.:;!?-]*)+`,'i');
 function draft(text,state,day){
- let cleaned=text.trim().replace(/^(?:(?:oh|ola|olá|oi|ei|opa|e aí|e ai|por favor|anota aí|anota ai|anota|anotar|adiciona aí|adiciona ai|adiciona|adicionar|registra aí|registra ai|registra|registrar|lanca aí|lanca ai|lanca|lança aí|lança ai|lança|lancar|lançar|cadastra|cadastrar|coloque|coloca|bota aí|bota ai|bota|botar|inclui|incluir|salva aí|salva ai|salva|salvar|novo|nova|eu|pra ele|para ele|pro assistente|para o assistente)\b[\s,:]*)+/i,'').trim();
+ let cleaned=text.trim().replace(/^[,\s.:;!?-]+/,'').trim();
+ cleaned=cleaned.replace(FILLER_REGEX,'').replace(/^[,\s.:;!?-]+/,'').trim();
  const verb=cleaned.match(VERB_REGEX);
  let isIncome=false,remainder='';
  if(verb){
@@ -104,10 +108,43 @@ function draft(text,state,day){
  let {date,rest}=dateFrom(initial,day),accountId=state.accounts.length===1?state.accounts[0].id:'';
  const account=rest.match(/\bna conta\s+(.+)$/i);
  if(account){const matches=state.accounts.filter(a=>norm(a.name)===norm(account[1]));if(matches.length!==1)throw Error('Não identifiquei essa conta. Use o nome exato cadastrado ou escolha a conta no formulário.');accountId=matches[0].id;rest=rest.slice(0,account.index).trim();}
+ 
+ const tags=[];
+ // 1. Spoken hashtags: "hashtag padaria", "tag uber", "com a hashtag thiago"
+ rest=rest.replace(/\b(?:com\s+(?:a|as)\s+)?(?:hash\s*tag|tag)s?\s+([a-zA-Z0-9_\u00C0-\u00FF-]+)/gi,(_,t)=>{
+  const ct=cleanTag(t);if(ct)tags.push(ct);return '';
+ });
+ // 2. Written hashtags: "#padaria", "#uber"
+ rest=rest.replace(/#([a-zA-Z0-9_\u00C0-\u00FF-]+)/g,(_,t)=>{
+  const ct=cleanTag(t);if(ct)tags.push(ct);return '';
+ }).replace(/\s+/g,' ').trim();
+
  const secondAmount=new RegExp(`\\b(?:e|mais)\\s+(?:${[...Object.keys(small),...Object.keys(hundreds),'cem','mil'].join('|')})\\b`);
  if(/\d|\b(mil|milhao|milhoes|bilhao|bilhoes|reais|real|brl|centavos?|gastei|paguei|comprei|recebi|ganhei|menos|virgula)\b/.test(norm(rest))||secondAmount.test(norm(rest)))return help('Não consegui separar o valor do restante da frase. Use um único valor completo, como “Gastei 2.000 reais com aluguel” ou “Gastei 20 reais e 50 centavos com ração”.');
+ 
  let category='';const custom=rest.match(/\b(?:na )?categoria\s+(.+)$/i);
  if(custom){category=custom[1].trim();if(!category||category.length>80)throw Error('Use um nome de categoria de até 80 caracteres.');rest=rest.slice(0,custom.index).trim();}
+ 
+ // 3. Automatic tags from place or person: "no Thiago", "na padaria", "no posto Ipiranga", "pelo iFood"
+ const placeMatches=[...rest.matchAll(/\b(?:no|na|num|numa|em|pelo|pela)\s+([a-zA-Z0-9_\u00C0-\u00FF]+(?:\s+[a-zA-Z0-9_\u00C0-\u00FF]+)?)/gi)];
+ for(const m of placeMatches){
+  const words=m[1].split(/\s+/);
+  for(const word of words){
+   const w=norm(word);
+   if(['conta','categoria','dia','mes','ano','hoje','ontem','amanha'].includes(w))continue;
+   const ct=cleanTag(word);if(ct&&ct.length>=2)tags.push(ct);
+  }
+ }
+
+ // 4. Known services/keywords: uber, 99, ifood, padaria, mercado, etc.
+ const knownServices=['uber','99','99pop','taxi','ifood','rappi','delivery','padaria','mercado','supermercado','farmacia','drogaria','gasolina','combustivel','aluguel','luz','energia','agua','internet','telefone','netflix','spotify','amazon','racao'];
+ const normalizedRest=norm(rest);
+ for(const kw of knownServices){
+  if(new RegExp(`\\b${kw}\\b`,'i').test(normalizedRest)){
+   tags.push(cleanTag(kw));
+  }
+ }
+
  let description=rest.replace(/^(?:com|de|em|por|para|no|na|do|da|dos|das)\s+/i,'').trim();
  if(!description||/^(entrada|entradas|receita|receitas|saida|saída|saidas|saídas|despesa|despesas|gasto|gastos)$/i.test(description)){
   description=verb&&/salario|salário/i.test(verb[1])?'Salário':(isIncome?'Receita':'Despesa');
@@ -115,7 +152,8 @@ function draft(text,state,day){
   return help('Informe uma descrição e apenas um valor por vez. Ex.: “Gastei 35 reais com ração hoje”.');
  }
  const defaultCat=(verb&&/salario|salário/i.test(verb[1]))?'Salário':(isIncome?'Renda extra':'Outros');
- return {kind:'draft',transaction:{type:isIncome?'income':'expense',amountCents:cents,description,date,category:category||categoryMatch(description)||defaultCat,accountId,priority:'',tags:[]},message:'Categoria sugerida; confira também o valor, a data e a conta antes de salvar.'};
+ const finalTags=[...new Set(tags.filter(t=>/^[-a-z0-9_]{1,40}$/.test(t)))].slice(0,20);
+ return {kind:'draft',transaction:{type:isIncome?'income':'expense',amountCents:cents,description,date,category:category||categoryMatch(description)||defaultCat,accountId,priority:'',tags:finalTags},message:'Categoria sugerida; confira também o valor, a data e a conta antes de salvar.'};
 }
 function period(text,day,month){
  let remaining=text,result=month;
