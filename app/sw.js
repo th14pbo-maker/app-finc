@@ -1,5 +1,5 @@
 // Finance OS Service Worker — Offline-first local capability
-const CACHE_NAME = 'finance-os-v27';
+const CACHE_NAME = 'finance-os-v28';
 const PRECACHE_ASSETS = [
   './',
   './index.html',
@@ -18,6 +18,10 @@ const PRECACHE_ASSETS = [
   './js/backup.mjs',
   './js/flow-data.mjs',
   './js/goal-analytics.mjs',
+  './js/import-payload.mjs',
+  './js/supabase-config.mjs',
+  './js/supabase.mjs',
+  './js/sync.mjs',
   './js/profile.mjs',
   './js/ui.mjs',
   './js/currency.mjs',
@@ -42,7 +46,7 @@ const PRECACHE_ASSETS = [
 
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(PRECACHE_ASSETS.map(url => new Request(url, {cache: 'reload'})))).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then(cache => cache.addAll(PRECACHE_ASSETS.map(url => new Request(url, { cache: 'reload' })))).then(() => self.skipWaiting())
   );
 });
 
@@ -55,11 +59,18 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  // Ignore health check or non-GET requests
+  // 1. Ignore non-GET requests or internal server health checks
   if (event.request.method !== 'GET' || event.request.url.includes('__finance_os_health')) {
     return;
   }
 
+  // 2. CRITICAL: Never cache Supabase Auth, REST or RPC requests
+  const url = event.request.url;
+  if (url.includes('/auth/v1/') || url.includes('/rest/v1/') || url.includes(':54321') || url.includes('.supabase.co')) {
+    return; // Let browser make direct network request
+  }
+
+  // 3. Cache-first strategy for local application assets
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;

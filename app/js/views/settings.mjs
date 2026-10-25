@@ -1,5 +1,387 @@
 import {exportBackup,parseBackup,BACKUP_MAX_BYTES} from '../backup.mjs';
 import {profileForm} from './profile.mjs';
-import {el,icon,btn,header,panel,panelHead,field,openDialog,confirmDialog,money,progress,empty,link,transactionTable,runAction,userAvatar} from '../ui.mjs';
-export function renderSettings(c){const profile=profileForm(c);const backupFile=el('input',{type:'file',accept:'.json,application/json',class:'hide','aria-label':'Escolher backup completo'});backupFile.addEventListener('change',async()=>{const file=backupFile.files?.[0];if(!file)return;try{if(file.size>BACKUP_MAX_BYTES)throw Error('Escolha um backup de até 8 MB.');const next=parseBackup(await file.text());confirmDialog('Restaurar backup completo?',`Este backup contém ${next.accounts.length} contas, ${next.cards.length} cartões, ${next.transactions.length} transações e ${next.goals.length} metas. Ele substituirá todos os dados deste navegador, inclusive perfil e preferências. Exporte um backup atual antes de continuar.`,()=>c.dispatch('importState',next))}catch(e){c.notify(e.message,'error')}finally{backupFile.value=''}});const backupPanel=panel([panelHead('Backup e transferência','Leve seus dados para outro navegador ou para a versão local.'),el('p',{class:'small muted'},'O backup JSON inclui contas, cartões, lançamentos, metas, aportes e perfil. Guarde-o em local privado: ele contém seus dados e não é criptografado.'),el('div',{class:'actions',style:'margin-top:16px'},[btn('Baixar backup completo',()=>runAction(()=>{const url=URL.createObjectURL(new Blob([exportBackup(c.state)],{type:'application/json'}));const a=el('a',{href:url,download:'finance-os-backup-'+new Date().toISOString().slice(0,10)+'.json'});a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)},c.notify),'','download'),btn('Restaurar backup',()=>backupFile.click()),backupFile])],'settings-section');return el('div',{},[header('Seu espaço, do seu jeito.','Preferências, privacidade e seus dados financeiros.'),el('div',{class:'settings'},[backupPanel,panel([panelHead('Seu perfil','Personalize seu espaço financeiro.'),profile],'settings-section'),panel([panelHead('Navegue pelo Finance OS','Todas as áreas, também no celular.'),el('div',{class:'actions'},[['Cartões','cards'],['Metas','goals']].map(([label,route])=>btn(label,()=>c.navigate(route))))],'settings-section'),panel([panelHead('Aparência','Escolha o tema que fica mais confortável para você.'),el('div',{class:'actions','aria-label':'Tema'},[['dark','Modo escuro','moon'],['light','Modo claro','sun']].map(([theme,label,ico])=>{const b=btn(label,()=>runAction(()=>c.dispatch('preferences',{theme}),c.notify),(c.state.preferences.theme||'dark')===theme?'primary':'',ico);b.setAttribute('aria-pressed',String((c.state.preferences.theme||'dark')===theme));return b}))],'settings-section'),panel([panelHead('Privacidade visual','Controle como seus valores aparecem na tela.'),btn(c.state.preferences.hideAmounts?'Mostrar valores':'Ocultar valores',()=>runAction(()=>c.dispatch('preferences',{hideAmounts:!c.state.preferences.hideAmounts}),c.notify),'','eye'),el('p',{class:'small muted',style:'margin-top:16px'},'Ocultar valores não é criptografia. Os dados continuam disponíveis neste navegador.')],'settings-section'),panel([panelHead('Dados locais','Sem integração bancária ou backup remoto.'),el('p',{class:'small muted'},'Seus lançamentos ficam salvos no armazenamento local deste navegador. Limpar os dados do site remove esses registros. A exportação CSV está disponível em Transações.'),el('div',{class:'actions',style:'margin-top:20px'},[btn('Zerar dados financeiros',()=>confirmDialog('Começar do zero?','Todas as contas, cartões, transações, metas e pessoas cadastradas serão removidas deste espaço. Esta ação não pode ser desfeita.',()=>c.dispatch('reset')),'danger'),btn('Perfil local',()=>c.navigate('login'))])],'settings-section')])])}
-export function renderDemoEntry(c){const signup=c.route==='signup';const name=field('Seu nome','displayName','text',signup?'':c.state.preferences.displayName);const form=el('form',{},[name,el('button',{class:'btn primary',type:'submit'},signup?'Criar perfil local':'Abrir meu espaço')]);form.addEventListener('submit',e=>{e.preventDefault();const displayName=new FormData(form).get('displayName').trim();if(!displayName)return;try{c.dispatch('preferences',{displayName:displayName.slice(0,60)});c.navigate('overview')}catch(e){c.notify(e.message,'error')}});return el('div',{class:'auth'},[el('div',{class:'brand'},[el('div',{class:'brand-mark'},'f'),el('div',{},'financeos')]),el('h1',{},signup?'Seu futuro começa aqui.':'Bem-vindo ao seu espaço.'),el('p',{class:'muted'},'Menos ruído. Mais clareza sobre o seu dinheiro.'),panel([form,el('div',{class:'subtle-divider'}),el('p',{class:'small muted'},'Perfil local, sem autenticação própria ou sincronização. Não informe senhas ou credenciais bancárias.'),btn(signup?'Já tenho um perfil':'Personalizar perfil',()=>c.navigate(signup?'login':'signup'),'ghost')])])}
+import {el,icon,btn,header,panel,panelHead,field,openDialog,confirmDialog,runAction,userAvatar} from '../ui.mjs';
+import {getSupabaseClient} from '../supabase.mjs';
+import {getSyncManager} from '../sync.mjs';
+import {getSupabaseConfig,saveSupabaseConfig} from '../supabase-config.mjs';
+
+export function renderSettings(c) {
+  const profile = profileForm(c);
+  const syncManager = getSyncManager();
+  const client = getSupabaseClient();
+  const user = client?.getUser();
+  const status = syncManager?.getStatus() || 'local';
+
+  // 1. Painel de Nuvem e Autenticação Supabase
+  let accountPanel;
+  if (user) {
+    const statusText = {
+      synced: 'Sincronizado com a nuvem privada',
+      syncing: 'Sincronizando com a nuvem...',
+      pending: 'Alterações pendentes de sincronização',
+      offline: 'Modo offline (dados preservados localmente)',
+      error: 'Erro na conexão com a nuvem'
+    }[status] || 'Conectado';
+
+    const statusClass = status === 'synced' ? 'status-synced' : status === 'syncing' ? 'status-syncing' : 'status-pending';
+
+    const assistedImportAction = syncManager?.hasVisitorData()
+      ? el('div', { class: 'notice info', style: 'margin-top:16px' }, [
+          el('strong', {}, 'Dados de visitante encontrados: '),
+          'Existem dados financeiros salvos antes do login. Deseja importá-los para sua conta privada com validação atômica?',
+          el('div', { class: 'actions', style: 'margin-top:8px' }, [
+            btn('Importar dados locais para a conta', async () => {
+              try {
+                c.notify('Importando e validando dados na nuvem...');
+                const res = await syncManager.performAssistedImport();
+                c.notify(`Importação concluída! ${res.counts.transactions} lançamentos sincronizados.`);
+                location.hash = '#overview';
+              } catch (err) {
+                c.notify(err.message, 'error');
+              }
+            }, 'primary', 'download')
+          ])
+        ])
+      : null;
+
+    accountPanel = panel([
+      panelHead('Sua Conta e Nuvem Privada', 'Acesso individual exclusivo da família.'),
+      el('div', { class: 'account-info' }, [
+        el('p', {}, [el('strong', {}, 'E-mail: '), user.email]),
+        el('p', { class: `sync-status-indicator ${statusClass}`, style: 'margin-top:4px' }, [
+          el('i', { class: 'status-dot' }),
+          el('span', {}, statusText)
+        ])
+      ]),
+      assistedImportAction,
+      el('div', { class: 'actions', style: 'margin-top:16px' }, [
+        btn('Sair da conta', async () => {
+          confirmDialog('Encerrar sessão?', 'Seus dados privados serão limpos da memória deste dispositivo. O modo visitante será reativado.', async () => {
+            await client.signOut();
+            c.notify('Sessão encerrada com segurança.');
+            c.navigate('overview');
+          });
+        }, 'danger', 'log-out')
+      ])
+    ], 'settings-section');
+  } else {
+    accountPanel = panel([
+      panelHead('Conta e Acesso Privado', 'Entre para manter suas finanças privadas sincronizadas.'),
+      el('p', { class: 'small muted' }, 'Você está no Modo Visitante. Seus dados estão salvos apenas neste navegador.'),
+      el('div', { class: 'actions', style: 'margin-top:16px' }, [
+        btn('Entrar na minha conta', () => c.navigate('login'), 'primary', 'log-in'),
+        btn('Cadastrar (convidados)', () => c.navigate('signup'), 'ghost')
+      ])
+    ], 'settings-section');
+  }
+
+  // 2. Painel de Backup JSON
+  const backupFile = el('input', { type: 'file', accept: '.json,application/json', class: 'hide', 'aria-label': 'Escolher backup completo' });
+  backupFile.addEventListener('change', async () => {
+    const file = backupFile.files?.[0];
+    if (!file) return;
+    try {
+      if (file.size > BACKUP_MAX_BYTES) throw Error('Escolha um backup de até 8 MB.');
+      const next = parseBackup(await file.text());
+      confirmDialog(
+        'Restaurar backup completo?',
+        `Este backup contém ${next.accounts.length} contas, ${next.cards.length} cartões, ${next.transactions.length} transações e ${next.goals.length} metas. Ele substituirá os dados locais atuais. Exporte um backup antes de continuar.`,
+        () => c.dispatch('importState', next)
+      );
+    } catch (e) {
+      c.notify(e.message, 'error');
+    } finally {
+      backupFile.value = '';
+    }
+  });
+
+  const backupPanel = panel([
+    panelHead('Backup e transferência', 'Leve seus dados para outro navegador ou guarde uma cópia privada.'),
+    el('p', { class: 'small muted' }, 'O backup JSON inclui contas, cartões, lançamentos, metas, aportes e perfil. Guarde-o em local seguro: ele contém seus dados e não é criptografado.'),
+    el('div', { class: 'actions', style: 'margin-top:16px' }, [
+      btn('Baixar backup completo', () => runAction(() => {
+        const url = URL.createObjectURL(new Blob([exportBackup(c.state)], { type: 'application/json' }));
+        const a = el('a', { href: url, download: 'finance-os-backup-' + new Date().toISOString().slice(0, 10) + '.json' });
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }, c.notify), '', 'download'),
+      btn('Restaurar backup', () => backupFile.click()),
+      backupFile
+    ])
+  ], 'settings-section');
+
+  // 3. Painel de Configuração de Servidor Supabase
+  const config = getSupabaseConfig();
+  const configPanel = panel([
+    panelHead('Conexão Supabase', 'Servidor de banco de dados e autenticação.'),
+    el('p', { class: 'small muted' }, `URL atual: ${config.url}`),
+    el('div', { class: 'actions', style: 'margin-top:12px' }, [
+      btn('Configurar credenciais da nuvem', () => {
+        const urlInput = field('URL do Projeto Supabase', 'url', 'url', config.url);
+        const keyInput = field('Anon Public Key', 'anonKey', 'text', config.anonKey);
+        const form = el('form', {}, [
+          urlInput,
+          keyInput,
+          el('div', { class: 'actions', style: 'margin-top:16px' }, [
+            el('button', { class: 'btn primary', type: 'submit' }, 'Salvar configurações')
+          ])
+        ]);
+        const dialog = openDialog('Configuração Supabase', [form]);
+        form.addEventListener('submit', e => {
+          e.preventDefault();
+          const fd = new FormData(form);
+          const newUrl = fd.get('url').trim();
+          const newKey = fd.get('anonKey').trim();
+          if (!newUrl) return;
+          saveSupabaseConfig({ url: newUrl, anonKey: newKey });
+          c.notify('Configuração salva. Recarregando conexão...');
+          dialog.close();
+          setTimeout(() => location.reload(), 300);
+        });
+      }, 'ghost')
+    ])
+  ], 'settings-section');
+
+  return el('div', {}, [
+    header('Seu espaço, do seu jeito.', 'Preferências, privacidade e seus dados financeiros.'),
+    el('div', { class: 'settings' }, [
+      accountPanel,
+      backupPanel,
+      panel([panelHead('Seu perfil', 'Personalize seu espaço financeiro.'), profile], 'settings-section'),
+      panel([panelHead('Aparência', 'Escolha o tema que fica mais confortável para você.'),
+        el('div', { class: 'actions', 'aria-label': 'Tema' }, [['dark', 'Modo escuro', 'moon'], ['light', 'Modo claro', 'sun']].map(([theme, label, ico]) => {
+          const b = btn(label, () => runAction(() => c.dispatch('preferences', { theme }), c.notify), (c.state.preferences.theme || 'dark') === theme ? 'primary' : '', ico);
+          b.setAttribute('aria-pressed', String((c.state.preferences.theme || 'dark') === theme));
+          return b;
+        }))
+      ], 'settings-section'),
+      panel([panelHead('Privacidade visual', 'Controle como seus valores aparecem na tela.'),
+        btn(c.state.preferences.hideAmounts ? 'Mostrar valores' : 'Ocultar valores', () => runAction(() => c.dispatch('preferences', { hideAmounts: !c.state.preferences.hideAmounts }), c.notify), '', 'eye'),
+        el('p', { class: 'small muted', style: 'margin-top:16px' }, 'Ocultar valores não é criptografia. Os dados continuam disponíveis neste navegador.')
+      ], 'settings-section'),
+      configPanel,
+      panel([panelHead('Dados locais', 'Gerenciamento do espaço local.'),
+        el('p', { class: 'small muted' }, 'Seus lançamentos ficam salvos localmente. Limpar os dados do site remove esses registros.'),
+        el('div', { class: 'actions', style: 'margin-top:20px' }, [
+          btn('Zerar dados financeiros', () => confirmDialog('Começar do zero?', 'Todas as contas, cartões, transações, metas e pessoas cadastradas serão removidas deste espaço. Esta ação não pode ser desfeita.', () => c.dispatch('reset')), 'danger')
+        ])
+      ], 'settings-section')
+    ])
+  ]);
+}
+
+/**
+ * Visual completo de Autenticação: Login, Cadastro de Convidados e Recuperação de Senha
+ */
+export function renderDemoEntry(c) {
+  const route = c.route;
+  const client = getSupabaseClient();
+
+  const brandHeader = el('div', { class: 'brand' }, [
+    el('div', { class: 'brand-mark' }, 'f'),
+    el('div', {}, 'financeos')
+  ]);
+
+  if (route === 'signup') {
+    // -------------------------------------------------------------
+    // TELA DE CADASTRO (Restrito aos e-mails autorizados)
+    // -------------------------------------------------------------
+    const nameInput = field('Seu nome completo', 'displayName', 'text', '');
+    const emailInput = field('E-mail (deve estar na lista de convidados)', 'email', 'email', '');
+    const passInput = field('Senha (mínimo 6 caracteres)', 'password', 'password', '');
+    const pass2Input = field('Confirmar senha', 'passwordConfirm', 'password', '');
+
+    const notice = el('div', { class: 'notice info', style: 'margin-bottom:16px' }, [
+      el('strong', {}, 'Acesso exclusivo: '),
+      'O cadastro é restrito aos membros convidados da família. Se o seu e-mail não estiver na lista de autorizados, o cadastro será recusado.'
+    ]);
+
+    const submitBtn = el('button', { class: 'btn primary', type: 'submit' }, 'Cadastrar meu espaço');
+    const form = el('form', {}, [
+      notice,
+      nameInput,
+      emailInput,
+      passInput,
+      pass2Input,
+      submitBtn
+    ]);
+
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const displayName = fd.get('displayName').trim();
+      const email = fd.get('email').trim();
+      const password = fd.get('password');
+      const passwordConfirm = fd.get('passwordConfirm');
+
+      if (!displayName) { c.notify('Informe seu nome.', 'error'); return; }
+      if (!email) { c.notify('Informe seu e-mail.', 'error'); return; }
+      if (!password || password.length < 6) { c.notify('A senha deve ter no mínimo 6 caracteres.', 'error'); return; }
+      if (password !== passwordConfirm) { c.notify('As senhas não coincidem.', 'error'); return; }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Verificando convite e criando conta...';
+
+      try {
+        await client.signUp({ email, password, displayName });
+        c.notify('Cadastro realizado com sucesso! Bem-vindo ao Finance OS.');
+        c.navigate('overview');
+      } catch (err) {
+        c.notify(err.message, 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Cadastrar meu espaço';
+      }
+    });
+
+    return el('div', { class: 'auth' }, [
+      brandHeader,
+      el('h1', {}, 'Seu futuro começa aqui.'),
+      el('p', { class: 'muted' }, 'Crie seu espaço particular na nuvem privada da família.'),
+      panel([
+        form,
+        el('div', { class: 'subtle-divider' }),
+        el('div', { class: 'actions' }, [
+          btn('Já tem uma conta? Entrar', () => c.navigate('login'), 'ghost'),
+          btn('Continuar como visitante', () => c.navigate('overview'), 'ghost')
+        ])
+      ])
+    ]);
+  }
+
+  if (route === 'forgot-password') {
+    // -------------------------------------------------------------
+    // RECUPERAÇÃO DE SENHA
+    // -------------------------------------------------------------
+    const emailInput = field('E-mail cadastrado', 'email', 'email', '');
+    const submitBtn = el('button', { class: 'btn primary', type: 'submit' }, 'Enviar link de recuperação');
+    const form = el('form', {}, [emailInput, submitBtn]);
+
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const email = new FormData(form).get('email').trim();
+      if (!email) { c.notify('Informe seu e-mail.', 'error'); return; }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Enviando...';
+
+      try {
+        await client.resetPasswordForEmail(email);
+        c.notify('Instruções enviadas para seu e-mail!');
+        c.navigate('login');
+      } catch (err) {
+        c.notify(err.message, 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Enviar link de recuperação';
+      }
+    });
+
+    return el('div', { class: 'auth' }, [
+      brandHeader,
+      el('h1', {}, 'Recuperar acesso.'),
+      el('p', { class: 'muted' }, 'Enviaremos um link para você redefinir sua senha.'),
+      panel([
+        form,
+        el('div', { class: 'subtle-divider' }),
+        btn('Voltar para o login', () => c.navigate('login'), 'ghost')
+      ])
+    ]);
+  }
+
+  if (route === 'update-password') {
+    // -------------------------------------------------------------
+    // DEFINIR NOVA SENHA (após link de recuperação)
+    // -------------------------------------------------------------
+    const passInput = field('Nova senha (mínimo 6 caracteres)', 'password', 'password', '');
+    const pass2Input = field('Confirmar nova senha', 'passwordConfirm', 'password', '');
+    const submitBtn = el('button', { class: 'btn primary', type: 'submit' }, 'Salvar nova senha');
+    const form = el('form', {}, [passInput, pass2Input, submitBtn]);
+
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const password = fd.get('password');
+      const passwordConfirm = fd.get('passwordConfirm');
+
+      if (!password || password.length < 6) {
+        c.notify('A nova senha deve ter no mínimo 6 caracteres.', 'error');
+        return;
+      }
+      if (password !== passwordConfirm) {
+        c.notify('As senhas não coincidem.', 'error');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Atualizando senha...';
+
+      try {
+        await client.updateUser({ password });
+        c.notify('Senha atualizada com sucesso! Bem-vindo de volta.');
+        c.navigate('overview');
+      } catch (err) {
+        c.notify(err.message, 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Salvar nova senha';
+      }
+    });
+
+    return el('div', { class: 'auth' }, [
+      brandHeader,
+      el('h1', {}, 'Definir nova senha.'),
+      el('p', { class: 'muted' }, 'Crie uma nova senha segura para o seu espaço financeiro.'),
+      panel([
+        form,
+        el('div', { class: 'subtle-divider' }),
+        btn('Cancelar e ir para o início', () => c.navigate('overview'), 'ghost')
+      ])
+    ]);
+  }
+
+  // -------------------------------------------------------------
+  // TELA DE LOGIN (Padrão)
+  // -------------------------------------------------------------
+  const emailInput = field('Seu e-mail', 'email', 'email', '');
+  const passInput = field('Sua senha', 'password', 'password', '');
+  const submitBtn = el('button', { class: 'btn primary', type: 'submit' }, 'Entrar no meu espaço');
+  const form = el('form', {}, [emailInput, passInput, submitBtn]);
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    const fd = new FormData(form);
+    const email = fd.get('email').trim();
+    const password = fd.get('password');
+
+    if (!email || !password) {
+      c.notify('Preencha seu e-mail e senha.', 'error');
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Autenticando...';
+
+    try {
+      const res = await client.signInWithPassword({ email, password });
+      c.notify(`Bem-vindo de volta, ${res.user?.user_metadata?.displayName || 'Você'}!`);
+      c.navigate('overview');
+    } catch (err) {
+      c.notify(err.message, 'error');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Entrar no meu espaço';
+    }
+  });
+
+  return el('div', { class: 'auth' }, [
+    brandHeader,
+    el('h1', {}, 'Bem-vindo ao seu espaço.'),
+    el('p', { class: 'muted' }, 'Menos ruído. Mais clareza sobre o seu dinheiro.'),
+    panel([
+      form,
+      el('div', { class: 'subtle-divider' }),
+      el('div', { class: 'actions' }, [
+        btn('Criar conta (convidados)', () => c.navigate('signup'), 'ghost'),
+        btn('Esqueci minha senha', () => c.navigate('forgot-password'), 'ghost'),
+        btn('Continuar como visitante', () => c.navigate('overview'), 'ghost')
+      ])
+    ])
+  ]);
+}
