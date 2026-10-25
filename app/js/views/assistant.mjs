@@ -30,7 +30,7 @@ export function openAssistant(c){
  const onVisibility=()=>{if(document.hidden)close();};
  document.addEventListener('visibilitychange',onVisibility);window.addEventListener('pagehide',close);window.addEventListener('hashchange',close);
  dialog.addEventListener('close',cleanup);dialog.addEventListener('cancel',event=>{event.preventDefault();close();});
- const examples=['Gastei 35 reais com ração hoje','Qual meu saldo?','Quanto gastei com alimentação este mês?','Qual minha projeção?'];
+ const examples=['Gastei 10 BRL na padaria','Recebi 500 BRL','Qual meu saldo?','Quanto gastei com alimentação este mês?','Qual minha projeção?'];
  const form=el('form',{class:'assistant-form',onSubmit:event=>{
   event.preventDefault();if(listening)return;
   const response=interpretAssistant(input.value,c.state,{month:c.month});
@@ -42,14 +42,54 @@ export function openAssistant(c){
     response.month&&el('small',{class:'muted'},monthLabel(response.month)),el('p',{class:'small secondary'},response.detail)
    ]));return;
   }
-  const t=response.transaction,account=c.state.accounts.find(a=>a.id===t.accountId);
+  const t={...response.transaction};
+  if(!t.accountId&&c.state.accounts.length)t.accountId=c.state.accounts[0].id;
+  let selectedAccountId=t.accountId||(c.state.accounts[0]?.id||'');
+  const accountSelector=c.state.accounts.length>1
+   ?el('select',{class:'assistant-account-select','aria-label':'Conta do lançamento',onChange:e=>{selectedAccountId=e.target.value;t.accountId=e.target.value;}},c.state.accounts.map(a=>el('option',{value:a.id,selected:a.id===selectedAccountId},a.name)))
+   :el('span',{},c.state.accounts.find(a=>a.id===selectedAccountId)?.name||'Sem conta cadastrada');
   const row=(label,value)=>el('div',{},[el('dt',{},label),el('dd',{},value)]);
+  const saveBtn=btn(
+   t.type==='income'?'Adicionar como Entrada (+)':'Adicionar como Saída (−)',
+   ()=>{
+    if(!c.state.accounts.length){close();c.navigate('accounts');c.notify('Cadastre uma conta antes de adicionar lançamentos.','error');return;}
+    try{
+     c.dispatch('saveTransaction',{
+      id:null,
+      description:t.description,
+      notes:'',
+      type:t.type,
+      amountCents:t.amountCents,
+      date:t.date,
+      accountId:selectedAccountId||c.state.accounts[0].id,
+      toAccountId:null,
+      cardId:null,
+      invoiceMonth:null,
+      category:t.category,
+      tags:[],
+      priority:'',
+      memberId:c.state.members.find(m=>m.id==='me')?.id||c.state.members[0]?.id
+     });
+     const label=t.type==='income'?'Entrada':'Saída';
+     c.notify(`${label} de ${money(t.amountCents,false)} adicionada com sucesso!`,'positive');
+     close();
+    }catch(err){c.notify(err.message,'error');}
+   },
+   'primary',
+   'check'
+  );
+  const reviewBtn=btn(
+   'Revisar formulário completo',
+   ()=>{close();c.openTransaction({...t,accountId:selectedAccountId});},
+   'ghost',
+   'edit'
+  );
   result.append(el('div',{class:'assistant-draft'},[
-   el('span',{class:'assistant-draft-label'},[icon('edit'),'Rascunho · ainda não salvo']),
+   el('span',{class:'assistant-draft-label'},[icon('edit'),'Pronto para adicionar']),
    el('h3',{},t.description),el('strong',{class:'number '+(t.type==='income'?'positive':'negative')},[(t.type==='income'?'+ ':'− '),money(t.amountCents,c.state.preferences.hideAmounts)]),
-   el('dl',{},[row('Tipo',t.type==='income'?'Receita':'Despesa'),row('Data',t.date.split('-').reverse().join('/')),row('Categoria',t.category),row('Conta',account?.name||'Escolha ao revisar')]),
+   el('dl',{},[row('Tipo',t.type==='income'?'Entrada (Receita)':'Saída (Despesa)'),row('Data',t.date.split('-').reverse().join('/')),row('Categoria',t.category),row('Conta',accountSelector)]),
    el('p',{class:'small secondary'},response.message),
-   btn(c.state.accounts.length?'Revisar lançamento':'Cadastrar uma conta',()=>{close();if(c.state.accounts.length)c.openTransaction(t);else{c.navigate('accounts');c.notify('Cadastre uma conta e volte ao Assistente para preparar o lançamento.');}},'primary',c.state.accounts.length?'edit':'plus')
+   el('div',{class:'assistant-draft-actions'},[saveBtn,reviewBtn])
   ]));
  }},[
   el('div',{class:'dialog-head'},[el('div',{},[el('span',{class:'assistant-eyebrow'},[icon('mic'),'VOZ E TEXTO']),el('h2',{id:'assistant-title'},'Seu dinheiro, em palavras.')]),iconBtn('close','Fechar assistente',close)]),

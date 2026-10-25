@@ -63,3 +63,13 @@ test('multiplicadores, centavos incompletos e valores escondidos em categoria pe
  for(const text of ['Gastei 2 mil com aluguel','Gastei dois milhões com casa','Gastei vinte reais e cinquenta com ração','Gastei 20 com almoço categoria Lanches e 30 com café','Gastei 20 com almoço categoria Lanches e trinta com café'])assert.equal(ask(text).kind,'help',text);
  assert.equal(ask('Gastei duzentos reais com ração').transaction.amountCents,20000);
 });
+test('aceita comandos falados com BRL, saídas na padaria e entradas diretas',()=>{
+ const t1=ask('Oh, gastei 10 BRL na padaria');
+ assert.equal(t1.kind,'draft');assert.equal(t1.transaction.type,'expense');assert.equal(t1.transaction.amountCents,1000);assert.equal(t1.transaction.category,'Padaria');
+ const t2=ask('Recebi 500 BRL');
+ assert.equal(t2.kind,'draft');assert.equal(t2.transaction.type,'income');assert.equal(t2.transaction.amountCents,50000);assert.equal(t2.transaction.description,'Receita');
+ const t3=ask('gastei 10 BRL na padaria');
+ assert.equal(t3.kind,'draft');assert.equal(t3.transaction.type,'expense');assert.equal(t3.transaction.amountCents,1000);
+ const t4=ask('Recebi 500');
+ assert.equal(t4.kind,'draft');assert.equal(t4.transaction.type,'income');assert.equal(t4.transaction.amountCents,50000);
+});

@@ -20,7 +20,9 @@
 .assistant-draft dl{display:grid;grid-template-columns:1fr 1fr;gap:12px 18px;margin:16px 0}
 .assistant-draft dt{font-size:11px;color:var(--muted)}
 .assistant-draft dd{margin:3px 0 0;font-size:13px;overflow-wrap:anywhere}
-.assistant-draft>.btn{margin-top:18px;width:100%}
+.assistant-draft-actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
+.assistant-draft-actions .btn{flex:1;min-width:170px}
+.assistant-account-select{background:var(--color-surface-raised);border:1px solid var(--color-border);color:var(--text);border-radius:8px;padding:6px 10px;font-size:12px;max-width:100%}
 .assistant-details{border-top:1px solid var(--color-border);margin-top:24px;padding-top:16px;color:var(--muted);font-size:11px;line-height:1.7}
 .assistant-details summary{cursor:pointer;color:var(--secondary)}
 .assistant-details p{margin-top:10px}
