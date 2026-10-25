@@ -70,7 +70,7 @@ export function renderSettings(c) {
       el('p', { class: 'small muted' }, 'Você está no Modo Visitante. Seus dados estão salvos apenas neste navegador.'),
       el('div', { class: 'actions', style: 'margin-top:16px' }, [
         btn('Entrar na minha conta', () => c.navigate('login'), 'primary', 'log-in'),
-        btn('Cadastrar (convidados)', () => c.navigate('signup'), 'ghost')
+        btn('Cadastrar nova conta', () => c.navigate('signup'), 'ghost')
       ])
     ], 'settings-section');
   }
@@ -187,16 +187,16 @@ export function renderDemoEntry(c) {
     // TELA DE CADASTRO (Restrito aos e-mails autorizados)
     // -------------------------------------------------------------
     const nameInput = field('Seu nome completo', 'displayName', 'text', '');
-    const emailInput = field('E-mail (deve estar na lista de convidados)', 'email', 'email', '');
+    const emailInput = field('Seu e-mail', 'email', 'email', '');
     const passInput = field('Senha (mínimo 6 caracteres)', 'password', 'password', '');
     const pass2Input = field('Confirmar senha', 'passwordConfirm', 'password', '');
 
     const notice = el('div', { class: 'notice info', style: 'margin-bottom:16px' }, [
-      el('strong', {}, 'Acesso exclusivo: '),
-      'O cadastro é restrito aos membros convidados da família. Se o seu e-mail não estiver na lista de autorizados, o cadastro será recusado.'
+      el('strong', {}, 'Privacidade total: '),
+      'Cada pessoa tem seu próprio login e suas finanças 100% privadas e isoladas.'
     ]);
 
-    const submitBtn = el('button', { class: 'btn primary', type: 'submit' }, 'Cadastrar meu espaço');
+    const submitBtn = el('button', { class: 'btn primary', type: 'submit' }, 'Criar minha conta');
     const form = el('form', {}, [
       notice,
       nameInput,
@@ -220,7 +220,7 @@ export function renderDemoEntry(c) {
       if (password !== passwordConfirm) { c.notify('As senhas não coincidem.', 'error'); return; }
 
       submitBtn.disabled = true;
-      submitBtn.textContent = 'Verificando convite e criando conta...';
+      submitBtn.textContent = 'Criando sua conta...';
 
       try {
         await client.signUp({ email, password, displayName });
@@ -229,7 +229,7 @@ export function renderDemoEntry(c) {
       } catch (err) {
         c.notify(err.message, 'error');
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Cadastrar meu espaço';
+        submitBtn.textContent = 'Criar minha conta';
       }
     });
 
@@ -363,7 +363,11 @@ export function renderDemoEntry(c) {
       c.notify(`Bem-vindo de volta, ${res.user?.user_metadata?.displayName || 'Você'}!`);
       c.navigate('overview');
     } catch (err) {
-      c.notify(err.message, 'error');
+      let msg = err.message || '';
+      if (msg.includes('Invalid login credentials') || msg.includes('incorretos') || msg.includes('invalid_grant')) {
+        msg = 'E-mail ou senha incorretos. Clique no ícone de olho no campo de senha para conferir o que digitou, ou use "Esqueci minha senha" para redefinir.';
+      }
+      c.notify(msg, 'error');
       submitBtn.disabled = false;
       submitBtn.textContent = 'Entrar no meu espaço';
     }
@@ -377,7 +381,7 @@ export function renderDemoEntry(c) {
       form,
       el('div', { class: 'subtle-divider' }),
       el('div', { class: 'actions' }, [
-        btn('Criar conta (convidados)', () => c.navigate('signup'), 'ghost'),
+        btn('Criar conta', () => c.navigate('signup'), 'ghost'),
         btn('Esqueci minha senha', () => c.navigate('forgot-password'), 'ghost')
       ])
     ])

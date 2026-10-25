@@ -12,25 +12,24 @@ function createMockStorage() {
   };
 }
 
-test('Supabase Auth: Cadastro restrito a e-mails autorizados na lista de convites', async () => {
+test('Supabase Auth: Cadastro direto de usuário com e-mail, senha e metadados', async () => {
   const storage = createMockStorage();
 
-  // Mock fetch simulating GoTrue & Database trigger check_user_registration_allowed
+  // Mock fetch simulating GoTrue registration
   const mockFetch = async (url, options) => {
     if (url.includes('/auth/v1/signup')) {
       const body = JSON.parse(options.body);
-      // Simulate database trigger rejection for unauthorized emails
-      if (body.email === 'intruso@example.com') {
+      if (body.email === 'ja-existe@example.com') {
         return {
           ok: false,
           status: 400,
           json: async () => ({
             code: 400,
-            msg: 'Database error saving new user: Acesso restrito: este e-mail não possui convite autorizado para cadastro.'
+            msg: 'User already registered'
           })
         };
       }
-      // Authorized email succeeds
+      // Direct registration succeeds
       return {
         ok: true,
         status: 200,
@@ -50,28 +49,28 @@ test('Supabase Auth: Cadastro restrito a e-mails autorizados na lista de convite
 
   const client = new SupabaseClient({ storage, fetchFn: mockFetch });
 
-  // 1. Tentar cadastro com e-mail não autorizado deve falhar com mensagem clara
+  // 1. Tentar cadastro com e-mail duplicado deve informar erro amigável
   await assert.rejects(
     async () => {
       await client.signUp({
-        email: 'intruso@example.com',
+        email: 'ja-existe@example.com',
         password: 'password123',
-        displayName: 'Intruso'
+        displayName: 'Existente'
       });
     },
-    /Acesso restrito: este e-mail não possui convite autorizado na lista da família/
+    /Este e-mail já possui cadastro/
   );
 
-  // 2. Tentar cadastro com e-mail autorizado deve concluir com sucesso
+  // 2. Cadastro direto de novo usuário conclui com sucesso
   const res = await client.signUp({
-    email: 'titular1@financeos.com',
+    email: 'novo-usuario@financeos.com',
     password: 'password123',
-    displayName: 'Titular Um'
+    displayName: 'Novo Usuário'
   });
 
-  assert.equal(res.user.email, 'titular1@financeos.com');
+  assert.equal(res.user.email, 'novo-usuario@financeos.com');
   assert.equal(res.session.access_token, 'fake-jwt-token-titular1');
-  assert.equal(client.getUser()?.email, 'titular1@financeos.com');
+  assert.equal(client.getUser()?.email, 'novo-usuario@financeos.com');
 });
 
 test('Supabase Auth: Login, falha de senha incorreta, recuperação e logout', async () => {

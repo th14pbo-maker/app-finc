@@ -696,3 +696,47 @@ textarea{font:inherit;background:#101010;border:1px solid #303030;border-radius:
   color: #0369a1;
 }
 
+/* Password Field with Eye Toggle */
+.password-field-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+.password-field-wrap input {
+  width: 100%;
+  padding-right: 44px;
+}
+.password-toggle-btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s ease;
+}
+.password-toggle-btn:hover,
+.password-toggle-btn.active {
+  color: var(--accent);
+  background: rgba(56, 189, 248, 0.12);
+}
+.password-toggle-btn .icon {
+  width: 17px;
+  height: 17px;
+}
+[data-theme=light] .password-toggle-btn:hover,
+[data-theme=light] .password-toggle-btn.active {
+  color: var(--accent);
+  background: rgba(3, 108, 156, 0.1);
+}
+
+

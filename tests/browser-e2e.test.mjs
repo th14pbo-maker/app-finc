@@ -45,8 +45,8 @@ test('Navegador E2E: Renderização de Telas, Formulários de Autenticação e C
     await page.goto(`${baseUrl}/index.html#signup`, { waitUntil: 'networkidle' });
     await page.waitForSelector('.notice.info', { timeout: 10000 });
     const noticeText = await page.locator('.notice.info').innerText();
-    assert.ok(noticeText.includes('restrito aos membros convidados'), 'Aviso de convite deve estar presente na tela de cadastro');
-    console.log('[Browser 3/5] Formulário de Cadastro e aviso de convite validados.');
+    assert.ok(noticeText.includes('Privacidade total'), 'Aviso de privacidade deve estar presente na tela de cadastro');
+    console.log('[Browser 3/5] Formulário de Cadastro e aviso de privacidade validados.');
 
     // 4. Navegação para tela de Recuperação de Senha (#forgot-password)
     console.log('[Browser 4/5] Testando tela de Recuperação (#forgot-password)...');

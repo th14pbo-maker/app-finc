@@ -92,16 +92,14 @@ export class SupabaseClient {
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       const msg = data.msg || data.message || data.error_description || '';
-      if (
-        msg.includes('convite') ||
-        msg.includes('allowed_emails') ||
-        msg.includes('Database error') ||
-        msg.includes('saving new user') ||
-        msg.includes('não autorizado') ||
-        msg.includes('restrito') ||
-        res.status >= 400
-      ) {
-        throw new Error('Acesso restrito: este e-mail não possui convite autorizado na lista da família.');
+      if (msg.includes('User already registered') || msg.includes('already registered')) {
+        throw new Error('Este e-mail já possui cadastro. Faça login ou use "Esqueci minha senha".');
+      }
+      if (msg.includes('Password should be') || msg.includes('weak_password')) {
+        throw new Error('A senha informada é fraca. Escolha uma senha com no mínimo 6 caracteres.');
+      }
+      if (msg.includes('convite') || msg.includes('allowed_emails')) {
+        throw new Error('Acesso restrito: este e-mail não possui convite autorizado.');
       }
       throw new Error(msg || 'Não foi possível concluir o cadastro.');
     }
