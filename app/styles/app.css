@@ -85,6 +85,7 @@ textarea{font:inherit;background:#101010;border:1px solid #303030;border-radius:
   cursor: pointer;
   transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
   user-select: none;
+  -webkit-user-select: none;
 }
 .metric.metric-interactive:hover, .metric.metric-interactive:focus-visible {
   transform: translateY(-2px);
@@ -99,7 +100,7 @@ textarea{font:inherit;background:#101010;border:1px solid #303030;border-radius:
   align-items: center;
   gap: 8px;
 }
-.metric-hint {
+.metric-hint, .metric-hint-btn {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -111,17 +112,24 @@ textarea{font:inherit;background:#101010;border:1px solid #303030;border-radius:
   padding: 2px 7px;
   font-weight: 500;
   transition: all .2s ease;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  font-family: inherit;
+  line-height: inherit;
 }
-.metric-hint .icon {
+.metric-hint .icon, .metric-hint-btn .icon {
   width: 12px;
   height: 12px;
 }
-.metric.metric-interactive:hover .metric-hint {
+.metric.metric-interactive:hover .metric-hint,
+.metric.metric-interactive:hover .metric-hint-btn,
+.metric-hint-btn:hover {
   background: rgba(56, 189, 248, 0.2);
   border-color: var(--accent);
 }
 @media (max-width: 767px) {
-  .metric-hint span {
+  .metric-hint span, .metric-hint-btn span {
     display: none;
   }
 }

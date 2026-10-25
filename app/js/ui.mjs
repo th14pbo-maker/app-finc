@@ -11,7 +11,13 @@ export function icon(name){const svg=document.createElementNS('http://www.w3.org
 export const btn=(label,onClick,variant='',ico)=>el('button',{type:'button',class:`btn ${variant}`,onClick},[ico&&icon(ico),label]);
 export const iconBtn=(name,label,click)=>el('button',{type:'button',class:'btn ghost icon-btn','aria-label':label,title:label,onClick:click},icon(name));
 export const link=(text,route)=>el('a',{href:'#'+route,class:'section-link'},[text,icon('arrowRight')]);
-export const panel=(children,cls='')=>el('section',{class:'panel '+cls},children);
+export const panel = (children, cls = '') => {
+ const attrs = typeof cls === 'string'
+  ? { class: ('panel ' + cls).trim() }
+  : { ...cls, class: ('panel ' + (cls.class || '')).trim() };
+ return el('section', attrs, children);
+};
+
 export const panelHead=(title,sub,action)=>el('div',{class:'panel-head'},[el('div',{},[el('h2',{},title),sub&&el('p',{},sub)]),action]);
 export const progress=(percent,color)=>el('div',{class:'progress',role:'progressbar','aria-valuenow':percent,'aria-valuemin':0,'aria-valuemax':100,'aria-label':'Progresso'},el('span',{style:`width:${Math.max(0,Math.min(100,percent))}%;${color?'background:'+color:''}`}));
 export const empty=(title,text)=>el('div',{class:'empty'},[icon('wallet'),el('h3',{},title),el('p',{},text)]);
@@ -72,7 +78,7 @@ function transactionRow(c,initial,editable){
 export function transactionTable(c,rows,editable=true){if(!rows.length)return empty('Nenhuma transação por aqui','Adicione um lançamento ou ajuste os filtros.');return el('div',{class:'table-wrap'},el('table',{},[el('thead',{},el('tr',{},[el('th',{},'Transação'),el('th',{class:'mobile-hide'},'Categoria'),el('th',{class:'desktop-col mobile-hide'},'Conta'),el('th',{},'Valor'),editable&&el('th',{},'Editar')])),el('tbody',{},rows.map(t=>transactionRow(c,t,editable)))]))}
 
 export function metric(label,value,foot,ico,cls='',footClass='',onClick=null){
- const elAttrs={class:'metric '+(onClick?'metric-interactive ':'')+cls};
+ const elAttrs={class:('metric '+(onClick?'metric-interactive ':'')+cls).trim()};
  if(onClick){
   elAttrs.tabIndex=0;
   elAttrs.role='button';
@@ -84,12 +90,20 @@ export function metric(label,value,foot,ico,cls='',footClass='',onClick=null){
   el('div',{class:'metric-top'},[
    label,
    el('span',{class:'metric-top-action'},[
-    onClick&&el('span',{class:'metric-hint'},[icon('mic'),el('span',{},'Ditar / Editar')]),
+    onClick&&el('button',{
+     type:'button',
+     class:'metric-hint-btn',
+     'aria-label':'Ditar ou editar '+label,
+     onClick:e=>{
+      e.stopPropagation();
+      onClick(e);
+     }
+    },[icon('mic'),el('span',{},'Ditar / Editar')]),
     icon(ico)
    ])
   ]),
   el('div',{class:'metric-value number'},value),
-  el('div',{class:'metric-foot '+footClass},foot)
+  el('div',{class:('metric-foot '+footClass).trim()},foot)
  ],elAttrs);
 }
 export function runAction(action,notify=toast){try{return action()}catch(error){notify(error.message,'error');return false}}

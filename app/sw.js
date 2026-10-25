@@ -1,5 +1,5 @@
 // Finance OS Service Worker — Offline-first local capability
-const CACHE_NAME = 'finance-os-v19';
+const CACHE_NAME = 'finance-os-v20';
 const PRECACHE_ASSETS = [
   './',
   './index.html',
@@ -27,6 +27,7 @@ const PRECACHE_ASSETS = [
   './js/views/assistant.mjs',
   './js/views/sidebar-assistant.mjs',
   './js/views/metric-quick.mjs',
+  './js/views/account-form.mjs',
   './js/views/projection.mjs',
   './js/workspace-menu.mjs',
   './js/views/overview.mjs',

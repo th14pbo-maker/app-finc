@@ -3,7 +3,7 @@ import {parseBrlCents,formatBrlCents} from '../currency.mjs';
 import {createVoiceSession} from '../speech.mjs';
 import {interpretAssistant} from '../assistant.mjs';
 import {today,balance} from '../domain.mjs';
-import {accountForm} from './overview.mjs';
+import {accountForm} from './account-form.mjs';
 import {goalForm} from './goals.mjs';
 
 const CATEGORIES = [
@@ -62,7 +62,6 @@ export function openMetricQuickAction(c, type) {
   showFeedback('processing', 'Processando fala…');
   try {
    let input = text;
-   // If user said only an amount or description, hint the type
    if (isIncome && !/recebi|ganhei|entrou|entrada|receita|salario|salário/i.test(input)) {
     input = 'Entrou ' + input;
    } else if (isExpense && !/gastei|paguei|comprei|gasto|despesa|saida|saída/i.test(input)) {
@@ -100,7 +99,7 @@ export function openMetricQuickAction(c, type) {
     c.dispatch('saveTransaction', payload);
     const label = payload.type === 'income' ? 'Entrada' : 'Saída';
     const tagInfo = payload.tags.length ? ' #' + payload.tags.join(' #') : '';
-    c.notify(`${label} de ${money(payload.amountCents, false)} adicionada!${tagInfo}`, 'positive');
+    c.notify(`✓ ${label} de ${money(payload.amountCents, false)} adicionada!${tagInfo}`, 'positive');
     if (dialog) {
      dialog.close();
      dialog.remove();
@@ -153,89 +152,105 @@ export function openMetricQuickAction(c, type) {
 
  updateVoiceUI();
 
- // Specific Section depending on metric type
+ let amountInput = null;
+
  if (isIncome || isExpense) {
-  // Manual Quick Input Form
-  const amountInput = el('input', {
+  amountInput = el('input', {
    type: 'text',
    inputmode: 'decimal',
    placeholder: '0,00',
    required: true,
    class: 'metric-quick-amount-input',
-   autofocus: true
+   onKeydown: e => {
+    if (e.key === 'Enter') {
+     e.preventDefault();
+     submitQuickEntry();
+    }
+   }
   });
 
   const descInput = el('input', {
    type: 'text',
    placeholder: isIncome ? 'Ex.: Salário, Venda, Freela' : 'Ex.: Pão no Thiago, Uber, Mercado',
    required: true,
-   class: 'metric-quick-text-input'
-  });
-
-  const categorySelect = el('select', {class: 'metric-quick-select'},
-   CATEGORIES.map(cat => el('option', {value: cat, selected: (isIncome && cat === 'Salário') || (isExpense && cat === 'Padaria')}, cat))
-  );
-
-  const accountSelect = el('select', {class: 'metric-quick-select'},
-   c.state.accounts.map(acc => el('option', {value: acc.id}, acc.name))
-  );
-
-  const quickForm = el('form', {
-   class: 'metric-quick-form',
-   onSubmit: e => {
-    e.preventDefault();
-    try {
-     const cents = parseBrlCents(amountInput.value);
-     const description = descInput.value.trim();
-     if (!description) throw Error('Informe uma descrição.');
-     if (!c.state.accounts.length) throw Error('Cadastre uma conta antes de lançar.');
-     const accountId = accountSelect.value || c.state.accounts[0].id;
-     const category = isIncome ? 'Salário' : (categorySelect.value || 'Outros');
-
-     c.dispatch('saveTransaction', {
-      id: null,
-      description,
-      notes: '',
-      type: isIncome ? 'income' : 'expense',
-      amountCents: cents,
-      date: today(),
-      accountId,
-      toAccountId: null,
-      cardId: null,
-      invoiceMonth: null,
-      category,
-      tags: [],
-      priority: '',
-      memberId: c.state.members.find(m => m.id === 'me')?.id || c.state.members[0]?.id
-     });
-
-     const label = isIncome ? 'Entrada' : 'Saída';
-     c.notify(`✓ ${label} de ${money(cents, false)} adicionada com sucesso!`, 'positive');
-     if (dialog) {
-      dialog.close();
-      dialog.remove();
-     }
-    } catch (err) {
-     showFeedback('error', err.message);
+   class: 'metric-quick-text-input',
+   onKeydown: e => {
+    if (e.key === 'Enter') {
+     e.preventDefault();
+     submitQuickEntry();
     }
    }
-  }, [
+  });
+
+  const categorySelect = isExpense ? el('select', {class: 'metric-quick-select'},
+   CATEGORIES.map(cat => el('option', {value: cat, selected: cat === 'Padaria'}, cat))
+  ) : null;
+
+  const accountSelect = c.state.accounts.length > 1 ? el('select', {class: 'metric-quick-select'},
+   c.state.accounts.map(acc => el('option', {value: acc.id}, acc.name))
+  ) : null;
+
+  function submitQuickEntry() {
+   try {
+    const rawVal = amountInput.value.trim();
+    if (!rawVal) throw Error('Informe o valor.');
+    const cents = parseBrlCents(rawVal);
+    const description = descInput.value.trim() || (isIncome ? 'Receita' : 'Despesa');
+    if (!c.state.accounts.length) throw Error('Cadastre uma conta antes de lançar.');
+    const accountId = accountSelect ? accountSelect.value : c.state.accounts[0].id;
+    const category = isIncome ? 'Salário' : (categorySelect ? categorySelect.value : 'Outros');
+
+    c.dispatch('saveTransaction', {
+     id: null,
+     description,
+     notes: '',
+     type: isIncome ? 'income' : 'expense',
+     amountCents: cents,
+     date: today(),
+     accountId,
+     toAccountId: null,
+     cardId: null,
+     invoiceMonth: null,
+     category,
+     tags: [],
+     priority: '',
+     memberId: c.state.members.find(m => m.id === 'me')?.id || c.state.members[0]?.id
+    });
+
+    const label = isIncome ? 'Entrada' : 'Saída';
+    c.notify(`✓ ${label} de ${money(cents, false)} adicionada com sucesso!`, 'positive');
+    if (dialog) {
+     dialog.close();
+     dialog.remove();
+    }
+   } catch (err) {
+    showFeedback('error', err.message);
+   }
+  }
+
+  const quickForm = el('div', {class: 'metric-quick-form'}, [
    el('div', {class: 'metric-quick-amount-wrap'}, [
     el('span', {class: 'currency-sym'}, 'R$'),
     amountInput
    ]),
    el('div', {class: 'metric-quick-inputs-row'}, [
     descInput,
-    isExpense && categorySelect,
-    c.state.accounts.length > 1 && accountSelect
+    categorySelect,
+    accountSelect
    ].filter(Boolean)),
-   el('button', {type: 'submit', class: 'btn primary metric-quick-save-btn'}, [
+   el('button', {
+    type: 'button',
+    class: 'btn primary metric-quick-save-btn',
+    onClick: e => {
+     e.preventDefault();
+     submitQuickEntry();
+    }
+   }, [
     icon(isIncome ? 'up' : 'plus'),
     el('span', {}, isIncome ? '+ Salvar Entrada' : '− Salvar Saída')
    ])
   ]);
 
-  // Month Recent Items
   const relevantTransactions = c.state.transactions
    .filter(t => t.date.startsWith(c.month) && (isIncome ? t.type === 'income' : ['expense', 'cardPurchase'].includes(t.type)))
    .sort((a, b) => b.date.localeCompare(a.date))
@@ -285,7 +300,6 @@ export function openMetricQuickAction(c, type) {
   );
 
  } else if (isBalance) {
-  // Saldo disponível: adjust account balances
   const accountsList = el('div', {class: 'metric-quick-accounts-list'},
    c.state.accounts.map(acc => {
     const accBalance = balance(c.state, acc.id);
@@ -295,7 +309,7 @@ export function openMetricQuickAction(c, type) {
       el('h4', {}, acc.name),
       el('div', {class: 'number'}, money(accBalance, c.state.preferences.hideAmounts))
      ]),
-     btn('Editar conta / saldo', () => {
+     btn('Ajustar conta', () => {
       if (dialog) {
        dialog.close();
        dialog.remove();
@@ -308,7 +322,7 @@ export function openMetricQuickAction(c, type) {
 
   container.append(
    voiceBox,
-   el('p', {class: 'small muted', style: 'margin: 12px 0 8px;'}, 'Você pode ditar uma transação acima ou ajustar os saldos das suas contas diretamente abaixo:'),
+   el('p', {class: 'small muted', style: 'margin: 8px 0;'}, 'Dite um lançamento acima ou ajuste o saldo de uma das suas contas:'),
    accountsList,
    btn('+ Cadastrar nova conta', () => {
     if (dialog) {
@@ -320,7 +334,6 @@ export function openMetricQuickAction(c, type) {
   );
 
  } else if (isGoals) {
-  // Reservado em metas
   const goalsList = c.state.goals.length
    ? el('div', {class: 'metric-quick-goals-list'}, c.state.goals.map(g => {
       return el('div', {class: 'metric-quick-goal-row'}, [
@@ -328,7 +341,7 @@ export function openMetricQuickAction(c, type) {
         el('strong', {}, g.name),
         el('div', {class: 'small muted'}, `Meta: ${money(g.targetCents, c.state.preferences.hideAmounts)}`)
        ]),
-       btn('Aportar / Editar', () => {
+       btn('Aportar', () => {
         if (dialog) {
          dialog.close();
          dialog.remove();
@@ -337,7 +350,7 @@ export function openMetricQuickAction(c, type) {
        }, 'primary', 'target')
       ]);
      }))
-   : el('p', {class: 'small muted'}, 'Nenhuma meta criada ainda. Comece definindo seu próximo objetivo.');
+   : el('p', {class: 'small muted'}, 'Nenhuma meta criada ainda. Defina um objetivo para acompanhar suas economias.');
 
   container.append(
    voiceBox,
@@ -363,10 +376,17 @@ export function openMetricQuickAction(c, type) {
 
  dialog.classList.add('metric-quick-dialog');
 
- // Clean up speech on close
  dialog.addEventListener('close', () => {
   voice.dispose();
  });
+
+ if (amountInput) {
+  setTimeout(() => {
+   try {
+    amountInput.focus();
+   } catch {}
+  }, 100);
+ }
 
  return dialog;
 }
