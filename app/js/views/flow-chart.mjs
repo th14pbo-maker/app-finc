@@ -32,7 +32,7 @@ function pie(c,slices){
 function priorityChart(c){
  const rows=priorityExpenses(c.state,c.month),total=rows.reduce((sum,r)=>sum+r.cents,0),hidden=c.state.preferences.hideAmounts;
  if(!total) return null;
- return el('section',{class:'priority-chart','aria-label':'Despesas por prioridade'},[el('h3',{},'Despesas por prioridade'),el('p',{class:'small muted'},'Verde: essencial · Amarelo: bem-estar · Vermelho: extra'),...rows.map(r=>el('div',{class:'priority-chart-row'},[el('div',{class:'kv'},[el('span',{},[el('i',{class:'flow-swatch',style:'background:'+r.color}),r.label]),el('span',{class:'number'},hidden?'•••':money(r.cents)+' · '+(total?Math.round(r.cents/total*100):0)+'%')]),el('div',{class:'priority-chart-track','aria-hidden':'true'},el('div',{style:'background:'+r.color+';width:'+(hidden?0:total?r.cents/total*100:0)+'%'}))]))]);
+ return el('section',{class:'priority-chart','aria-label':'Despesas por prioridade'},[el('h3',{},'Despesas por prioridade'),el('p',{class:'small muted'},'Verde: essencial · Amarelo: não essencial'),...rows.map(r=>el('div',{class:'priority-chart-row'},[el('div',{class:'kv'},[el('span',{},[el('i',{class:'flow-swatch',style:'background:'+r.color}),r.label]),el('span',{class:'number'},hidden?'•••':money(r.cents)+' · '+(total?Math.round(r.cents/total*100):0)+'%')]),el('div',{class:'priority-chart-track','aria-hidden':'true'},el('div',{style:'background:'+r.color+';width:'+(hidden?0:total?r.cents/total*100:0)+'%'}))]))]);
 }
 export function flowPanel(c,opts={}){
  const kind=chartTypes.some(([value])=>value===c.state.preferences.flowChartType)?c.state.preferences.flowChartType:'line',hidden=c.state.preferences.hideAmounts,series=flowSeries(c.state,c.month),s=series.at(-1),slices=expenseSlices(c.state,c.month);
