@@ -661,3 +661,38 @@ textarea{font:inherit;background:#101010;border:1px solid #303030;border-radius:
   color: #15803d;
   border-color: #bbf7d0;
 }
+
+/* Mandatory Authentication Screen Layout */
+.auth-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  background: radial-gradient(circle at 50% 20%, rgba(56, 189, 248, 0.08) 0%, transparent 70%), var(--color-bg);
+}
+.auth-card-wrap {
+  width: 100%;
+  max-width: 440px;
+}
+.auth-screen .auth {
+  margin: 0 auto;
+}
+[data-theme=light] .auth-screen {
+  background: radial-gradient(circle at 50% 20%, rgba(3, 108, 156, 0.08) 0%, transparent 70%), var(--color-bg);
+}
+
+/* Assisted Import Consent Banner */
+.import-consent-notice {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.12) 0%, rgba(10, 26, 34, 0.95) 100%);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: var(--r-md);
+  padding: 18px 20px;
+}
+[data-theme=light] .import-consent-notice {
+  background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
+  border-color: #7dd3fc;
+  color: #0369a1;
+}
+

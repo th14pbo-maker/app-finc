@@ -151,8 +151,10 @@ export function renderOverview(c){
  const total=c.state.accounts.reduce((n,a)=>n+balance(c.state,a.id),0);
  const allGoals=c.state.goals.reduce((n,g)=>n+goalProgress(c.state,g.id).savedCents,0);
  const rows=c.state.transactions.filter(t=>t.date.startsWith(c.month)).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
+ const importBanner = c.renderImportConsent ? c.renderImportConsent() : null;
 
  return el('div',{},[
+  importBanner,
   header('Visão geral','Seu panorama financeiro em tempo real.',[
    c.period(),
    btn('Nova transação',()=>c.openTransaction(),'primary','plus')

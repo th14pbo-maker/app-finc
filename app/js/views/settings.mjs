@@ -56,10 +56,10 @@ export function renderSettings(c) {
       assistedImportAction,
       el('div', { class: 'actions', style: 'margin-top:16px' }, [
         btn('Sair da conta', async () => {
-          confirmDialog('Encerrar sessão?', 'Seus dados privados serão limpos da memória deste dispositivo. O modo visitante será reativado.', async () => {
+          confirmDialog('Encerrar sessão?', 'Seus dados privados serão limpos da tela e o aplicativo voltará ao login com segurança.', async () => {
             await client.signOut();
             c.notify('Sessão encerrada com segurança.');
-            c.navigate('overview');
+            c.navigate('login');
           });
         }, 'danger', 'log-out')
       ])
@@ -241,8 +241,7 @@ export function renderDemoEntry(c) {
         form,
         el('div', { class: 'subtle-divider' }),
         el('div', { class: 'actions' }, [
-          btn('Já tem uma conta? Entrar', () => c.navigate('login'), 'ghost'),
-          btn('Continuar como visitante', () => c.navigate('overview'), 'ghost')
+          btn('Já tem uma conta? Entrar', () => c.navigate('login'), 'ghost')
         ])
       ])
     ]);
@@ -332,7 +331,7 @@ export function renderDemoEntry(c) {
       panel([
         form,
         el('div', { class: 'subtle-divider' }),
-        btn('Cancelar e ir para o início', () => c.navigate('overview'), 'ghost')
+        btn('Voltar para o login', () => c.navigate('login'), 'ghost')
       ])
     ]);
   }
@@ -379,8 +378,7 @@ export function renderDemoEntry(c) {
       el('div', { class: 'subtle-divider' }),
       el('div', { class: 'actions' }, [
         btn('Criar conta (convidados)', () => c.navigate('signup'), 'ghost'),
-        btn('Esqueci minha senha', () => c.navigate('forgot-password'), 'ghost'),
-        btn('Continuar como visitante', () => c.navigate('overview'), 'ghost')
+        btn('Esqueci minha senha', () => c.navigate('forgot-password'), 'ghost')
       ])
     ])
   ]);

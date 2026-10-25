@@ -45,6 +45,8 @@ const views = {
   'update-password': renderDemoEntry
 };
 
+const AUTH_ROUTES = ['login', 'signup', 'forgot-password', 'update-password'];
+
 function handleAuthHash() {
   const hash = location.hash.slice(1);
   if (!hash) return null;
@@ -79,8 +81,15 @@ function handleAuthHash() {
 const route = () => {
   const intercepted = handleAuthHash();
   if (intercepted) return intercepted;
+  const user = client?.getUser();
   const r = location.hash.slice(1);
-  return r === 'family' ? 'overview' : r === 'planning' ? 'goals' : r || 'overview';
+  if (!user) {
+    return AUTH_ROUTES.includes(r) ? r : 'login';
+  }
+  if (r === 'family') return 'overview';
+  if (r === 'planning') return 'goals';
+  if (AUTH_ROUTES.includes(r)) return 'overview';
+  return r || 'overview';
 };
 
 function persist(state) {
@@ -97,6 +106,10 @@ function persist(state) {
 }
 
 function dispatch(action, payload) {
+  const user = client?.getUser();
+  if (!user) {
+    throw Error('É necessário entrar em sua conta para realizar alterações financeiras.');
+  }
   const s = store.getState();
   const upsert = (list, value) => {
     const id = value.id || uid();
@@ -166,14 +179,58 @@ function navigate(r) {
 }
 
 function render() {
-  const state = store.getState();
-  const r = route();
   const user = client.getUser();
+  const r = route();
+
+  if (!user) {
+    // Modo não autenticado: login obrigatório, sem exibir ou permitir editar finanças locais
+    document.documentElement.dataset.theme = 'dark';
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) metaTheme.content = '#000000';
+
+    const c = {
+      state: initialState(),
+      month,
+      dispatch: () => { throw Error('Faça login para continuar.'); },
+      navigate,
+      notify: toast,
+      route: r,
+      user: null,
+      syncStatus: 'local',
+      openTransaction: () => toast('Faça login para adicionar transações.', 'error'),
+      period: () => el('div', { class: 'hide' })
+    };
+
+    let content;
+    try {
+      content = (views[r] || renderDemoEntry)(c);
+    } catch (e) {
+      content = empty('Não foi possível exibir esta área', e.message);
+    }
+
+    const authScreen = el('div', { class: 'auth-screen' }, [
+      el('div', { class: 'auth-card-wrap' }, [content])
+    ]);
+
+    document.getElementById('app').replaceChildren(authScreen);
+    const authTitles = {
+      login: 'Entrar',
+      signup: 'Cadastro',
+      'forgot-password': 'Recuperar Acesso',
+      'update-password': 'Definir Nova Senha'
+    };
+    document.title = (authTitles[r] || 'Acesso') + ' · Finance OS';
+    return;
+  }
+
+  // --- Modo autenticado: usuário com sessão válida ---
+  const state = store.getState();
   const syncStatus = syncManager.getStatus();
 
   const theme = state.preferences.theme === 'light' ? 'light' : 'dark';
   document.documentElement.dataset.theme = theme;
-  document.querySelector('meta[name="theme-color"]').content = theme === 'light' ? '#f6f8fa' : '#000000';
+  const metaTheme = document.querySelector('meta[name="theme-color"]');
+  if (metaTheme) metaTheme.content = theme === 'light' ? '#f6f8fa' : '#000000';
 
   const c = {
     state,
@@ -184,6 +241,47 @@ function render() {
     route: r,
     user,
     syncStatus,
+    renderImportConsent: () => {
+      if (!syncManager?.hasVisitorData()) return null;
+      if (typeof window !== 'undefined' && window.sessionStorage?.getItem('finance-os:dismiss-import')) return null;
+
+      const visitor = syncManager.getVisitorData();
+      const txCount = visitor?.transactions?.length || 0;
+      const accCount = visitor?.accounts?.length || 0;
+      const goalCount = visitor?.goals?.length || 0;
+
+      return el('div', { class: 'notice info import-consent-notice', style: 'margin-bottom: 24px; border-left: 3px solid var(--accent);' }, [
+        el('div', { class: 'import-consent-header' }, [
+          el('strong', { style: 'font-size: 13px; color: var(--accent); display: block; margin-bottom: 4px;' }, 'Dados financeiros locais encontrados neste dispositivo'),
+          el('p', { style: 'margin: 0 0 12px; font-size: 12px; line-height: 1.6;' },
+            `Encontramos ${accCount} conta(s), ${txCount} transação(ões) e ${goalCount} meta(s) salvas localmente antes do login. Deseja importá-los para sua conta privada no Supabase com validação atômica?`
+          )
+        ]),
+        el('div', { class: 'actions' }, [
+          btn('Sim, importar para minha conta', async () => {
+            try {
+              toast('Importando e validando seus dados locais com o Supabase...');
+              const res = await syncManager.performAssistedImport();
+              try {
+                storage.setItem('finance-os:imported-archive:v1', JSON.stringify(visitor));
+                storage.removeItem('finance-os:personal:v1');
+              } catch {}
+              toast(`Importação concluída com sucesso! ${res?.counts?.transactions ?? txCount} lançamentos sincronizados.`);
+              render();
+            } catch (err) {
+              toast(err.message, 'error');
+            }
+          }, 'primary', 'download'),
+          btn('Não, manter conta limpa', () => {
+            if (typeof window !== 'undefined' && window.sessionStorage) {
+              window.sessionStorage.setItem('finance-os:dismiss-import', '1');
+            }
+            toast('Dados locais preservados no navegador como cópia de segurança.');
+            render();
+          }, 'ghost')
+        ])
+      ]);
+    },
     openTransaction: (t = null, accountId = null) => transactionForm(c, t, accountId),
     period: () => el('label', { class: 'period' }, [
       el('span', { class: 'hide' }, 'Mês de referência'),
