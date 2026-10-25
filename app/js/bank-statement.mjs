@@ -8,7 +8,27 @@ import { parseBrlCents, formatBrlCents } from './currency.mjs';
 import { categories } from './views/transactions.mjs';
 import { el, icon, btn, iconBtn, money, openDialog, toast } from './ui.mjs';
 
-const norm = v => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+export const norm = v => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+
+/**
+ * Expressões regulares para detecção de linhas de resumo/saldo de extratos bancários brasileiros.
+ * Lançamentos como "SALDO ANTERIOR", "SALDO DO DIA", "SALDO FINAL" não representam receitas ou
+ * despesas e nunca devem ser importados como transações, pois causariam distorções drásticas no saldo.
+ */
+export const BALANCE_LINE_REGEX = /^\s*(saldo\b|sdo\s*do\s*dia|total\s*(aplicado|de\s*entradas|de\s*saidas|de\s*debitos|de\s*creditos)|resumo\s*(do\s*dia|do\s*periodo))\b/i;
+
+export function isBalanceLine(description) {
+  if (!description) return false;
+  const d = norm(description);
+  return BALANCE_LINE_REGEX.test(d);
+}
+
+/**
+ * Padrões de palavras-chave para identificar créditos (entradas) e débitos (saídas) no contexto bancário nacional.
+ */
+export const CREDIT_KEYWORDS = /\b(recebid[oa]|salario|estorno|reembolso|rendimento|proventos|ted recebida|doc recebido|deposito|credito|resgate|transferencia recebida|entrada|ted de|doc de|pix de|pix transf|transf pix|ordenado|holerite|cred pix)\b/i;
+
+export const DEBIT_KEYWORDS = /\b(pago|pagamento|enviad[oa]|compra|debito|saque|tarifa|boleto|fatura|transferencia enviada|pix enviado|ted enviada|doc enviado|deb pix|pix transf enviad[oa]|emitid[oa])\b/i;
 
 /**
  * Categorização inteligente baseada em palavras-chave do ecossistema bancário e de consumo brasileiro.
@@ -98,12 +118,6 @@ export function parseOfx(text) {
     const date = toIsoDate(dateMatch[1], dateMatch[2], dateMatch[3]);
     if (!date) continue;
 
-    // Valor
-    const amtMatch = content.match(/<TRNAMT>([-+]?\d+(?:\.\d+)?)/i);
-    if (!amtMatch) continue;
-    const numAmt = parseFloat(amtMatch[1]);
-    if (isNaN(numAmt) || numAmt === 0) continue;
-
     // Descrição (MEMO ou NAME ou CHECKNUM)
     const memoMatch = content.match(/<MEMO>([^<\r\n]+)/i);
     const nameMatch = content.match(/<NAME>([^<\r\n]+)/i);
@@ -111,8 +125,32 @@ export function parseOfx(text) {
     const rawDesc = memoMatch?.[1] || nameMatch?.[1] || checkMatch?.[1] || 'Lançamento bancário';
     const description = cleanXml(rawDesc).slice(0, 140) || 'Lançamento bancário';
 
-    // Se for CREDIT ou positivo -> income, senão expense
-    const isCredit = trnType === 'credit' || numAmt > 0;
+    // Descarta linhas de saldo e resumos de extrato
+    if (isBalanceLine(description)) continue;
+
+    // Valor (suporta ponto e vírgula decimal)
+    const amtMatch = content.match(/<TRNAMT>([-+]?\d+(?:[.,]\d+)?)/i);
+    if (!amtMatch) continue;
+    const numAmt = parseFloat(amtMatch[1].replace(',', '.'));
+    if (isNaN(numAmt) || numAmt === 0) continue;
+
+    // Identificação de Entrada (Crédito) vs Saída (Débito)
+    const debitTypes = ['debit', 'fee', 'srvchg', 'pos', 'payment', 'cash', 'directdebit'];
+    const creditTypes = ['credit', 'dep', 'int', 'div', 'directdep'];
+    let isCredit = false;
+    const descN = norm(description);
+    if (creditTypes.includes(trnType)) {
+      isCredit = true;
+    } else if (debitTypes.includes(trnType)) {
+      isCredit = false;
+    } else if (numAmt > 0) {
+      isCredit = true;
+    } else if (numAmt < 0) {
+      isCredit = false;
+    } else {
+      isCredit = CREDIT_KEYWORDS.test(descN) && !DEBIT_KEYWORDS.test(descN);
+    }
+
     const type = isCredit ? 'income' : 'expense';
     const amountCents = Math.round(Math.abs(numAmt) * 100);
 
@@ -160,6 +198,14 @@ export function parseCsv(text) {
   const items = [];
   const startRow = (dateCol >= 0 && /data|date/.test(headers[dateCol])) ? 1 : 0;
 
+  // Verifica se o arquivo CSV usa coluna com valores negativos para débitos/saídas
+  const hasNegativeValuesInCsv = amountCol >= 0 && lines.some((l, idx) => {
+    if (idx < startRow) return false;
+    const cols = l.split(sep);
+    const v = cols[amountCol] || '';
+    return v.includes('-') || /\b[Dd]\b/.test(v) || v.endsWith('-');
+  });
+
   for (let i = startRow; i < lines.length; i++) {
     const rawCols = lines[i].split(sep).map(c => c.replace(/^["']|["']$/g, '').trim());
     if (rawCols.length < 2) continue;
@@ -180,6 +226,9 @@ export function parseCsv(text) {
     // Extrai descrição
     const description = (rawCols[descCol] || 'Lançamento').slice(0, 140);
 
+    // Descarta linhas de saldo anterior, saldo final e resumos
+    if (isBalanceLine(description)) continue;
+
     // Extrai valor
     let amountCents = 0;
     let isIncome = false;
@@ -188,17 +237,31 @@ export function parseCsv(text) {
       const dVal = rawCols[debitCol];
       const cVal = rawCols[creditCol];
       if (cVal && /[1-9]/.test(cVal)) {
-        try { amountCents = parseBrlCents(cVal); isIncome = true; } catch {}
+        try { amountCents = parseBrlCents(cVal.replace(/[-+CDcd()\s]/g, '').trim()); isIncome = true; } catch {}
       } else if (dVal && /[1-9]/.test(dVal)) {
-        try { amountCents = parseBrlCents(dVal); isIncome = false; } catch {}
+        try { amountCents = parseBrlCents(dVal.replace(/[-+CDcd()\s]/g, '').trim()); isIncome = false; } catch {}
       }
     } else if (amountCol >= 0 && rawCols[amountCol]) {
-      const rawVal = rawCols[amountCol];
-      const isNegative = rawVal.includes('-') || /\b[Dd]\b/.test(rawVal) || /\(.*\)/.test(rawVal);
-      const isPositive = rawVal.includes('+') || /\b[Cc]\b/.test(rawVal);
+      const rawVal = rawCols[amountCol].trim();
+      const isNegative = rawVal.includes('-') || rawVal.endsWith('-') || /\b[Dd]\b/.test(rawVal) || /\(.*\)/.test(rawVal);
+      const isPositive = rawVal.includes('+') || rawVal.endsWith('+') || /\b[Cc]\b/.test(rawVal);
+      const descN = norm(description);
       try {
-        amountCents = parseBrlCents(rawVal.replace(/[-+CDcd()]/g, '').trim());
-        isIncome = isPositive || (!isNegative && (norm(description).includes('pix recebido') || norm(description).includes('salario')));
+        amountCents = parseBrlCents(rawVal.replace(/[-+CDcd()\s]/g, '').trim());
+        if (isPositive) {
+          isIncome = true;
+        } else if (isNegative) {
+          isIncome = false;
+        } else if (CREDIT_KEYWORDS.test(descN) && !DEBIT_KEYWORDS.test(descN)) {
+          isIncome = true;
+        } else if (DEBIT_KEYWORDS.test(descN) && !CREDIT_KEYWORDS.test(descN)) {
+          isIncome = false;
+        } else if (hasNegativeValuesInCsv) {
+          // Em extratos com valores assinados, linhas sem sinal negativo representam créditos/entradas
+          isIncome = true;
+        } else {
+          isIncome = false;
+        }
       } catch {}
     }
 
@@ -273,6 +336,9 @@ export function parseStatementText(text) {
     }
     desc = desc.slice(0, 140);
 
+    // Descarta linhas de saldo anterior, saldo final e totais de resumo
+    if (isBalanceLine(desc)) continue;
+
     const descNorm = norm(desc);
 
     // Determina se é Entrada ou Saída
@@ -281,10 +347,10 @@ export function parseStatementText(text) {
       isIncome = true;
     } else if (isNegative) {
       isIncome = false;
-    } else if (/\b(recebid[oa]|salario|estorno|reembolso|rendimento|proventos|ted recebida|doc recebido|deposito)\b/.test(descNorm)) {
+    } else if (CREDIT_KEYWORDS.test(descNorm) && !DEBIT_KEYWORDS.test(descNorm)) {
       isIncome = true;
     } else {
-      // Por padrão em extratos, sem sinal explícito, considera saída
+      // Por padrão em extratos, sem sinal explícito nem palavra de crédito, considera saída
       isIncome = false;
     }
 
@@ -337,6 +403,7 @@ export function analyzeStatement({ text, existingTransactions = [], accountId, m
       ex.accountId === accountId &&
       ex.date === item.date &&
       ex.amountCents === item.amountCents &&
+      (!ex.type || ex.type === item.type) &&
       (norm(ex.description) === norm(item.description) ||
        norm(ex.description).includes(norm(item.description)) ||
        norm(item.description).includes(norm(ex.description)))
@@ -411,7 +478,10 @@ export function openBankStatementDialog(c, initialAccountId = null) {
     const accountSelect = el('select', {
       class: 'statement-account-select',
       'aria-label': 'Conta bancária de destino',
-      onChange: e => { selectedAccountId = e.target.value; }
+      onChange: e => {
+        selectedAccountId = e.target.value;
+        renderInputStep();
+      }
     }, accounts.map(a => el('option', { value: a.id, selected: a.id === selectedAccountId }, a.name)));
 
     const accountField = el('div', { class: 'field' }, [
@@ -419,6 +489,38 @@ export function openBankStatementDialog(c, initialAccountId = null) {
       accountSelect,
       el('small', {}, 'As transações serão associadas a esta conta.')
     ]);
+
+    // Verificação de inconsistências existentes decorrentes de importações anteriores
+    const accTxs = c.state.transactions.filter(t => t.accountId === selectedAccountId);
+    const badBalances = accTxs.filter(t => isBalanceLine(t.description));
+    const badCredits = accTxs.filter(t => t.type === 'expense' && CREDIT_KEYWORDS.test(norm(t.description)) && !DEBIT_KEYWORDS.test(norm(t.description)));
+    let recoveryNotice = null;
+
+    if (badBalances.length > 0 || badCredits.length > 0) {
+      recoveryNotice = el('div', {
+        class: 'notice warning statement-recovery-notice',
+        style: 'margin-bottom: 16px; border-left: 3px solid var(--accent, #6366f1);'
+      }, [
+        el('div', {}, [
+          el('strong', { style: 'display: block; margin-bottom: 4px;' }, '⚠️ Inconsistências de extrato detectadas nesta conta'),
+          el('p', { style: 'margin: 0 0 10px; font-size: 12px; line-height: 1.5;' },
+            `Identificamos ${badBalances.length > 0 ? `${badBalances.length} linha(s) de saldo importada(s) como despesa` : ''}` +
+            `${badBalances.length > 0 && badCredits.length > 0 ? ' e ' : ''}` +
+            `${badCredits.length > 0 ? `${badCredits.length} entrada(s)/Pix classificado(s) como despesa` : ''}. ` +
+            'Esses lançamentos distorcem o saldo real do seu painel.'
+          ),
+          btn('Corrigir saldo e lançamentos agora', () => {
+            try {
+              const res = c.dispatch('sanitizeAccountTransactions', selectedAccountId);
+              toast(`Sucesso: ${res.removedCount} linha(s) de saldo removida(s) e ${res.convertedCount} lançamento(s) convertido(s) em receita.`);
+              renderInputStep();
+            } catch (err) {
+              toast(err.message, 'error');
+            }
+          }, 'primary small', 'check')
+        ])
+      ]);
+    }
 
     // Abas
     const tabFileBtn = el('button', {
@@ -515,7 +617,7 @@ export function openBankStatementDialog(c, initialAccountId = null) {
       }
     }, [icon('sparkles'), 'Analisar extrato bancário']);
 
-    wrap.append(accountField, tabHeader, filePanel, textPanel, errBox, analyzeBtn);
+    wrap.append(...[accountField, recoveryNotice, tabHeader, filePanel, textPanel, errBox, analyzeBtn].filter(Boolean));
     container.replaceChildren(wrap);
   }
 

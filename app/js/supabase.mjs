@@ -488,6 +488,22 @@ export class SupabaseClient {
           member_id: payload.memberId || null,
           tags: payload.tags || []
         });
+      case 'importTransactions':
+        return req('POST', 'transactions?on_conflict=id', (payload || []).map(t => ({
+          id: t.id,
+          description: t.description,
+          notes: t.notes || null,
+          type: t.type,
+          amount_cents: t.amountCents,
+          date: t.date,
+          account_id: t.accountId || null,
+          to_account_id: t.toAccountId || null,
+          card_id: t.cardId || null,
+          invoice_month: t.invoiceMonth || null,
+          category: t.category,
+          member_id: t.memberId || null,
+          tags: t.tags || []
+        })));
       case 'deleteTransaction':
         return req('DELETE', `transactions?id=eq.${payload}`);
       case 'preferences':

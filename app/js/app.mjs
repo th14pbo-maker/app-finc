@@ -10,7 +10,7 @@ import {renderSettings,renderDemoEntry} from './views/settings.mjs';
 import {renderSidebarAssistant} from './views/sidebar-assistant.mjs';
 import {getSupabaseClient} from './supabase.mjs';
 import {initSyncManager} from './sync.mjs';
-import {openBankStatementDialog} from './bank-statement.mjs';
+import {openBankStatementDialog, isBalanceLine, CREDIT_KEYWORDS, DEBIT_KEYWORDS, categorizeTransaction, norm} from './bank-statement.mjs';
 
 let storage;
 try {
@@ -125,13 +125,72 @@ function dispatch(action, payload) {
     upsert(s.transactions, payload);
   } else if (action === 'importTransactions') {
     if (!Array.isArray(payload) || !payload.length) throw Error('Nenhuma transação selecionada para importar.');
-    for (const t of payload) {
+    // Descarta linhas de resumo ou saldo por segurança
+    const validPayload = payload.filter(t => !isBalanceLine(t.description));
+    if (!validPayload.length) throw Error('Nenhuma transação válida para importar.');
+
+    for (const t of validPayload) {
       const errors = validateTransaction(s, t);
       if (errors.length) throw Error(`Erro no lançamento "${t.description}": ${errors.join(', ')}`);
     }
-    for (const t of payload) {
-      upsert(s.transactions, t);
+
+    const toInsert = [];
+    for (const t of validPayload) {
+      // Previne inserção de duplicatas idênticas já cadastradas na conta
+      const exists = s.transactions.some(ex =>
+        ex.accountId === t.accountId &&
+        ex.date === t.date &&
+        ex.amountCents === t.amountCents &&
+        ex.type === t.type &&
+        (norm(ex.description) === norm(t.description))
+      );
+      if (!exists) {
+        upsert(s.transactions, t);
+        toInsert.push(t);
+      }
     }
+    payload = toInsert;
+  } else if (action === 'sanitizeAccountTransactions') {
+    const accountId = payload;
+    if (!accountId) throw Error('Selecione uma conta para sanitização.');
+
+    const toRemove = [];
+    const toConvert = [];
+
+    for (const t of s.transactions) {
+      if (t.accountId !== accountId) continue;
+      if (isBalanceLine(t.description)) {
+        toRemove.push(t);
+      } else if (t.type === 'expense') {
+        const descN = norm(t.description);
+        if (CREDIT_KEYWORDS.test(descN) && !DEBIT_KEYWORDS.test(descN)) {
+          toConvert.push(t);
+        }
+      }
+    }
+
+    if (toRemove.length === 0 && toConvert.length === 0) {
+      return { removedCount: 0, convertedCount: 0 };
+    }
+
+    // 1. Remove linhas de saldo corrompidas
+    if (toRemove.length > 0) {
+      const removeIds = new Set(toRemove.map(t => t.id));
+      s.transactions = s.transactions.filter(t => !removeIds.has(t.id));
+      for (const t of toRemove) {
+        syncManager.queueMutation('deleteTransaction', t.id);
+      }
+    }
+
+    // 2. Converte créditos invertidos (despesa -> receita)
+    for (const t of toConvert) {
+      t.type = 'income';
+      t.category = categorizeTransaction(t.description, 'income');
+      syncManager.queueMutation('saveTransaction', t);
+    }
+
+    persist(s);
+    return { removedCount: toRemove.length, convertedCount: toConvert.length };
   } else if (action === 'deleteTransaction') {
     s.transactions = s.transactions.filter(t => t.id !== payload);
   } else if (action === 'saveAccount') {
