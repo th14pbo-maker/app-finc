@@ -143,8 +143,12 @@ export class SupabaseClient {
     return { user: data.user, session: data };
   }
 
-  async resetPasswordForEmail(email) {
-    const url = `${this.config.url}/auth/v1/recover`;
+  async resetPasswordForEmail(email, redirectTo = null) {
+    const defaultRedirect = (typeof window !== 'undefined' && window.location?.origin)
+      ? window.location.origin
+      : 'https://app-finc.vercel.app';
+    const targetRedirect = redirectTo || defaultRedirect;
+    const url = `${this.config.url}/auth/v1/recover?redirect_to=${encodeURIComponent(targetRedirect)}`;
     const cleanEmail = (email || '').trim().toLowerCase();
 
     let res;

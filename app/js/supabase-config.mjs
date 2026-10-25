@@ -9,8 +9,8 @@
  */
 
 export const PUBLIC_PROJECT_CONFIG = {
-  url: '', // Preencha com a URL do seu projeto Supabase (ex: https://xxxx.supabase.co)
-  anonKey: '' // Preencha com a chave pública anon do seu projeto
+  url: 'https://dauinbklyxsnrcwrowsl.supabase.co',
+  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRhdWluYmtseXhzbnJjd3Jvd3NsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4OTMzMDksImV4cCI6MjEwODQ2OTMwOX0.Liz-0tEDqqaERTsA8PNPEYTG_COfFz3hpgOGjAmCldg'
 };
 
 const STORAGE_KEY = 'finance-os:supabase-config:v1';
