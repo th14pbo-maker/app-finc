@@ -162,3 +162,51 @@ test('Correção 4: Logout limpa a memória do store sem vazar dados entre sess�
   const loggedOutState = store.getState();
   assert.equal(loggedOutState.accounts.length, 0, 'Memória não pode reter contas do usuário após logout');
 });
+
+test('Correção 5: Supabase signUp converte "email rate limit exceeded" em mensagem amigável', async () => {
+  const storage = createMockStorage();
+
+  const mockFetch = async (url) => {
+    if (url.includes('/auth/v1/signup')) {
+      return {
+        ok: false,
+        status: 429,
+        json: async () => ({ code: 429, msg: 'email rate limit exceeded' })
+      };
+    }
+    throw new Error('Unexpected url');
+  };
+
+  const client = new SupabaseClient({ storage, fetchFn: mockFetch });
+
+  await assert.rejects(
+    async () => {
+      await client.signUp({ email: 'patrick@example.com', password: 'password123', displayName: 'Patrick' });
+    },
+    /Limite temporário de envio de e-mails atingido/
+  );
+});
+
+test('Correção 6: Supabase signInWithPassword trata "Email not confirmed" com orientação clara', async () => {
+  const storage = createMockStorage();
+
+  const mockFetch = async (url) => {
+    if (url.includes('/auth/v1/token')) {
+      return {
+        ok: false,
+        status: 400,
+        json: async () => ({ error_description: 'Email not confirmed' })
+      };
+    }
+    throw new Error('Unexpected url');
+  };
+
+  const client = new SupabaseClient({ storage, fetchFn: mockFetch });
+
+  await assert.rejects(
+    async () => {
+      await client.signInWithPassword({ email: 'patrick@example.com', password: 'password123' });
+    },
+    /Seu e-mail ainda não foi confirmado/
+  );
+});

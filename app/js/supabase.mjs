@@ -92,6 +92,9 @@ export class SupabaseClient {
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       const msg = data.msg || data.message || data.error_description || '';
+      if (res.status === 429 || msg.toLowerCase().includes('rate limit')) {
+        throw new Error('Limite temporário de envio de e-mails atingido pelo servidor. Se o cadastro já foi iniciado, verifique sua caixa de entrada e pasta de spam. Caso contrário, aguarde alguns minutos antes de tentar novamente ou solicite ao administrador a liberação do seu acesso.');
+      }
       if (msg.includes('User already registered') || msg.includes('already registered')) {
         throw new Error('Este e-mail já possui cadastro. Faça login ou use "Esqueci minha senha".');
       }
@@ -131,6 +134,12 @@ export class SupabaseClient {
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       const msg = data.msg || data.error_description || data.message || '';
+      if (msg.includes('Email not confirmed') || msg.includes('email_not_confirmed')) {
+        throw new Error('Seu e-mail ainda não foi confirmado. Verifique o link de ativação enviado para sua caixa de entrada (e pasta de spam) para liberar seu acesso.');
+      }
+      if (res.status === 429 || msg.toLowerCase().includes('rate limit')) {
+        throw new Error('Muitas tentativas em pouco tempo. Por favor, aguarde alguns minutos antes de tentar entrar novamente.');
+      }
       if (msg.includes('Invalid login') || res.status === 400) {
         throw new Error('E-mail ou senha incorretos.');
       }
@@ -165,7 +174,11 @@ export class SupabaseClient {
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      throw new Error(data.msg || data.message || 'Não foi possível enviar o link de recuperação.');
+      const msg = data.msg || data.message || data.error_description || '';
+      if (res.status === 429 || msg.toLowerCase().includes('rate limit')) {
+        throw new Error('Limite de envio de e-mails atingido temporariamente. Aguarde alguns minutos antes de solicitar um novo link de recuperação.');
+      }
+      throw new Error(msg || 'Não foi possível enviar o link de recuperação.');
     }
     return { ok: true };
   }

@@ -223,6 +223,7 @@ export function renderDemoEntry(c) {
 
     form.addEventListener('submit', async e => {
       e.preventDefault();
+      if (submitBtn.disabled) return;
       const fd = new FormData(form);
       const displayName = fd.get('displayName').trim();
       const email = fd.get('email').trim();
@@ -238,13 +239,34 @@ export function renderDemoEntry(c) {
       submitBtn.textContent = 'Criando sua conta...';
 
       try {
-        await client.signUp({ email, password, displayName });
-        c.notify('Cadastro realizado com sucesso! Bem-vindo ao Finance OS.');
-        c.navigate('overview');
+        const res = await client.signUp({ email, password, displayName });
+        if (res?.session) {
+          c.notify('Cadastro realizado com sucesso! Bem-vindo ao Finance OS.');
+          c.navigate('overview');
+        } else {
+          c.notify('Cadastro iniciado! Enviamos um link de confirmação para o seu e-mail. Verifique sua caixa de entrada e pasta de spam para liberar seu acesso antes de entrar.', 'info');
+          c.navigate('login');
+        }
       } catch (err) {
         c.notify(err.message, 'error');
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Criar minha conta';
+        if (err.message.includes('Limite temporário') || err.message.toLowerCase().includes('rate limit')) {
+          let remaining = 60;
+          submitBtn.disabled = true;
+          submitBtn.textContent = `Aguarde ${remaining}s...`;
+          const timer = setInterval(() => {
+            remaining -= 1;
+            if (remaining > 0) {
+              submitBtn.textContent = `Aguarde ${remaining}s...`;
+            } else {
+              clearInterval(timer);
+              submitBtn.disabled = false;
+              submitBtn.textContent = 'Criar minha conta';
+            }
+          }, 1000);
+        } else {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Criar minha conta';
+        }
       }
     });
 
@@ -272,6 +294,7 @@ export function renderDemoEntry(c) {
 
     form.addEventListener('submit', async e => {
       e.preventDefault();
+      if (submitBtn.disabled) return;
       const email = new FormData(form).get('email').trim();
       if (!email) { c.notify('Informe seu e-mail.', 'error'); return; }
 
@@ -280,12 +303,28 @@ export function renderDemoEntry(c) {
 
       try {
         await client.resetPasswordForEmail(email);
-        c.notify('Instruções enviadas para seu e-mail!');
+        c.notify('Instruções enviadas para seu e-mail! Verifique sua caixa de entrada e pasta de spam.');
         c.navigate('login');
       } catch (err) {
         c.notify(err.message, 'error');
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Enviar link de recuperação';
+        if (err.message.includes('Limite') || err.message.toLowerCase().includes('rate limit')) {
+          let remaining = 60;
+          submitBtn.disabled = true;
+          submitBtn.textContent = `Aguarde ${remaining}s...`;
+          const timer = setInterval(() => {
+            remaining -= 1;
+            if (remaining > 0) {
+              submitBtn.textContent = `Aguarde ${remaining}s...`;
+            } else {
+              clearInterval(timer);
+              submitBtn.disabled = false;
+              submitBtn.textContent = 'Enviar link de recuperação';
+            }
+          }, 1000);
+        } else {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Enviar link de recuperação';
+        }
       }
     });
 
