@@ -135,6 +135,10 @@ textarea{font:inherit;background:#101010;border:1px solid #303030;border-radius:
   }
 }
 
+.sidebar .nav-label:first-of-type {
+  margin-top: 28px;
+}
+
 /* Evolution Tabs & Minimalist Panels */
 .evolution-head {
   display: flex;
