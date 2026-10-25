@@ -31,13 +31,14 @@ test('PWA: sw.js precacheia todos os assets necessários e ignora requisições 
   const swPath = path.join(root, 'app', 'sw.js');
   const content = await readFile(swPath, 'utf8');
 
-  // 1. Deve conter versão v31
-  assert.ok(content.includes('finance-os-v31'), 'Service Worker deve ter versão incrementada');
+  // 1. Deve conter versão v32
+  assert.ok(content.includes('finance-os-v32'), 'Service Worker deve ter versão incrementada');
 
   // 2. Deve conter novos módulos nos assets pré-cacheados
   assert.ok(content.includes('./js/supabase.mjs'), 'sw.js deve pré-cachear supabase.mjs');
   assert.ok(content.includes('./js/sync.mjs'), 'sw.js deve pré-cachear sync.mjs');
   assert.ok(content.includes('./js/import-payload.mjs'), 'sw.js deve pré-cachear import-payload.mjs');
+  assert.ok(content.includes('./js/pwa-install.mjs'), 'sw.js deve pré-cachear pwa-install.mjs');
 
   // 3. Deve ignorar endpoints de API Supabase (/auth/v1/ e /rest/v1/)
   assert.ok(content.includes('/auth/v1/'), 'sw.js deve conter regra de bypass para /auth/v1/');
@@ -51,4 +52,16 @@ test('PWA: sw.js precacheia todos os assets necessários e ignora requisições 
     const filePath = path.join(root, 'app', rel);
     await assert.doesNotReject(access(filePath), `Asset pré-cacheado "${rel}" deve existir no disco`);
   }
+});
+
+test('PWA Install: Detecção de standalone e plataformas móveis/desktop', async () => {
+  const { detectPlatform, isPwaInstalled } = await import('../app/js/pwa-install.mjs');
+
+  // No ambiente Node sem window, isPwaInstalled deve retornar false com segurança
+  assert.equal(isPwaInstalled(), false, 'Em ambiente não-browser, não deve crashar e retornar false');
+
+  const platform = detectPlatform();
+  assert.ok(typeof platform.isIOS === 'boolean');
+  assert.ok(typeof platform.isAndroid === 'boolean');
+  assert.ok(typeof platform.isDesktop === 'boolean');
 });

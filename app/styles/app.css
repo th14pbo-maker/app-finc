@@ -739,4 +739,130 @@ textarea{font:inherit;background:#101010;border:1px solid #303030;border-radius:
   background: rgba(3, 108, 156, 0.1);
 }
 
+/* PWA Install Button on Login Screen */
+.auth-install-row {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  justify-content: center;
+}
+.auth-install-btn {
+  font-size: 13px;
+  color: var(--muted);
+  gap: 8px;
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.02);
+  min-height: 42px;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+.auth-install-btn:hover {
+  color: var(--accent);
+  border-color: rgba(56, 189, 248, 0.4);
+  background: rgba(56, 189, 248, 0.08);
+}
+.auth-install-btn .icon {
+  width: 16px;
+  height: 16px;
+  color: var(--accent);
+}
+[data-theme=light] .auth-install-row {
+  border-top-color: rgba(0, 0, 0, 0.06);
+}
+[data-theme=light] .auth-install-btn {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+[data-theme=light] .auth-install-btn:hover {
+  background: rgba(3, 108, 156, 0.08);
+  border-color: var(--accent);
+}
+
+/* PWA Install Instructions Dialog */
+.pwa-install-dialog {
+  width: min(520px, calc(100% - 28px));
+  padding: 24px;
+}
+.pwa-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent);
+  font-size: 10px;
+  letter-spacing: 1.4px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.pwa-eyebrow .icon {
+  width: 15px;
+  height: 15px;
+}
+.pwa-platform-tag {
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  color: var(--accent);
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: var(--r-pill);
+  letter-spacing: normal;
+  font-weight: 500;
+}
+[data-theme=light] .pwa-platform-tag {
+  background: rgba(3, 108, 156, 0.1);
+  border-color: rgba(3, 108, 156, 0.2);
+}
+.pwa-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 16px 0;
+}
+.pwa-step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--r-md);
+  transition: background 0.2s;
+}
+[data-theme=light] .pwa-step-item {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+.pwa-step-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(56, 189, 248, 0.15);
+  color: var(--accent);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.pwa-step-body {
+  flex: 1;
+  min-width: 0;
+}
+.pwa-step-title {
+  display: block;
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.pwa-step-desc {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+
 

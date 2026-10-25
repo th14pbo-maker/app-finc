@@ -4,6 +4,7 @@ import {el,icon,btn,header,panel,panelHead,field,openDialog,confirmDialog,runAct
 import {getSupabaseClient} from '../supabase.mjs';
 import {getSyncManager} from '../sync.mjs';
 import {getSupabaseConfig,saveSupabaseConfig} from '../supabase-config.mjs';
+import {isPwaInstalled,triggerPwaInstall,onInstallAvailabilityChange} from '../pwa-install.mjs';
 
 export function renderSettings(c) {
   const profile = profileForm(c);
@@ -160,6 +161,13 @@ export function renderSettings(c) {
         el('p', { class: 'small muted', style: 'margin-top:16px' }, 'Ocultar valores não é criptografia. Os dados continuam disponíveis neste navegador.')
       ], 'settings-section'),
       configPanel,
+      !isPwaInstalled() ? panel([
+        panelHead('Aplicativo na tela inicial', 'Acesse o Finance OS como aplicativo nativo.'),
+        el('p', { class: 'small muted' }, 'Instale no seu celular ou computador para abrir direto da sua tela inicial ou desktop, sem a barra do navegador.'),
+        el('div', { class: 'actions', style: 'margin-top:16px' }, [
+          btn('Instalar aplicativo', () => triggerPwaInstall(c), 'primary', 'download')
+        ])
+      ], 'settings-section') : null,
       panel([panelHead('Dados locais', 'Gerenciamento do espaço local.'),
         el('p', { class: 'small muted' }, 'Seus lançamentos ficam salvos localmente. Limpar os dados do site remove esses registros.'),
         el('div', { class: 'actions', style: 'margin-top:20px' }, [
@@ -373,6 +381,26 @@ export function renderDemoEntry(c) {
     }
   });
 
+  // Botão secundário discreto para instalação PWA
+  let installRow = null;
+  if (!isPwaInstalled()) {
+    const installBtn = el('button', {
+      type: 'button',
+      class: 'btn ghost auth-install-btn',
+      'aria-label': 'Instalar aplicativo Finance OS',
+      title: 'Instalar aplicativo no seu celular ou computador',
+      onClick: () => triggerPwaInstall(c)
+    }, [
+      icon('download'),
+      el('span', {}, 'Instalar aplicativo')
+    ]);
+    installRow = el('div', { class: 'auth-install-row' }, [installBtn]);
+
+    onInstallAvailabilityChange(({ installed }) => {
+      if (installed && installRow) installRow.remove();
+    });
+  }
+
   return el('div', { class: 'auth' }, [
     brandHeader,
     el('h1', {}, 'Bem-vindo ao seu espaço.'),
@@ -383,7 +411,8 @@ export function renderDemoEntry(c) {
       el('div', { class: 'actions' }, [
         btn('Criar conta', () => c.navigate('signup'), 'ghost'),
         btn('Esqueci minha senha', () => c.navigate('forgot-password'), 'ghost')
-      ])
-    ])
+      ]),
+      installRow
+    ].filter(Boolean))
   ]);
 }

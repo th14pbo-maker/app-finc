@@ -34,11 +34,14 @@ test('Navegador E2E: Renderização de Telas, Formulários de Autenticação e C
     assert.equal(await passField.count(), 1, 'Campo de senha de login deve existir');
     console.log('[Browser 1/5] Login obrigatório validado ao acessar sem autenticação.');
 
-    // 2. Navegação para tela de Login explícita (#login)
+    // 2. Navegação para tela de Login explícita (#login) e validação do botão Instalar
     console.log('[Browser 2/5] Testando tela de Login (#login)...');
     await page.goto(`${baseUrl}/index.html#login`, { waitUntil: 'networkidle' });
     await page.waitForSelector('form input[type="email"]', { timeout: 10000 });
-    console.log('[Browser 2/5] Formulário de Login validado.');
+    const installBtn = page.locator('.auth-install-btn');
+    assert.equal(await installBtn.count(), 1, 'Botão de instalar aplicativo deve existir na tela de login');
+    assert.ok((await installBtn.innerText()).includes('Instalar aplicativo'), 'Botão deve conter texto Instalar aplicativo');
+    console.log('[Browser 2/5] Formulário de Login e botão Instalar aplicativo validados.');
 
     // 3. Navegação para tela de Cadastro (#signup)
     console.log('[Browser 3/5] Testando tela de Cadastro (#signup)...');
