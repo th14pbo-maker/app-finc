@@ -602,3 +602,62 @@ textarea{font:inherit;background:#101010;border:1px solid #303030;border-radius:
   background: #f8fafc;
   border-color: #e2e8f0;
 }
+
+/* Supabase Cloud Status & Sync Indicators */
+.cloud-badge {
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+.cloud-badge.synced {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.35);
+}
+.cloud-badge.syncing {
+  background: rgba(234, 179, 8, 0.15);
+  color: #fde047;
+  border: 1px solid rgba(234, 179, 8, 0.35);
+}
+.cloud-badge.pending {
+  background: rgba(249, 115, 22, 0.15);
+  color: #fdba74;
+  border: 1px solid rgba(249, 115, 22, 0.35);
+}
+.cloud-badge.offline {
+  background: rgba(148, 163, 184, 0.15);
+  color: #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+}
+.status-dot.green {
+  background: #22c55e;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+}
+.status-dot.yellow {
+  background: #eab308;
+  box-shadow: 0 0 8px rgba(234, 179, 8, 0.5);
+}
+.status-dot.orange {
+  background: #f97316;
+  box-shadow: 0 0 8px rgba(249, 115, 22, 0.5);
+}
+.sync-status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.account-info {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 12px;
+}
+[data-theme=light] .account-info {
+  background: #f8fafc;
+}
+[data-theme=light] .cloud-badge.synced {
+  background: #edf9f2;
+  color: #15803d;
+  border-color: #bbf7d0;
+}

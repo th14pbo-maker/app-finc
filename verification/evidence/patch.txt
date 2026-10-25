@@ -1,0 +1,1 @@
+PASS: patch aplicado em cópia limpa do relatório; 15 arquivos idênticos ao pacote.

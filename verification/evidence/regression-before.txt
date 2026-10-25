@@ -1,0 +1,6 @@
+{
+  version: 'PostgreSQL 18.6 (PGlite 0.5.11) on wasm32-unknown-emscripten, compiled by emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 3.1.74 (1092ec30a3fb1d46b1782ff1b4db5094d3d06ae5), 32-bit'
+}
+Migração original carregada
+ERRO REPRODUZIDO: 42703 column "entity_type" of relation "temp_id_map" does not exist PL/pgSQL function import_user_state(jsonb,text) line 127 at SQL statement
+PL/pgSQL function inline_code_block line 2 at assignment

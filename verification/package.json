@@ -1,0 +1,19 @@
+{
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.11",
+    "pg": "8.16.3"
+  },
+  "name": "finance-os-verification",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node run-database.mjs",
+    "test:client": "node --test ../tests/*.test.mjs",
+    "test:concurrency": "node ../supabase/tests/concurrency_test.mjs",
+    "test:guards": "node --test guards.test.mjs",
+    "test:local": "node run-local.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

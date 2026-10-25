@@ -1,0 +1,58 @@
+﻿
+> test:client
+> node --test ../tests/*.test.mjs
+
+Ô£ö fala prepara valor exato, categoria e data sem gravar nem escolher entre contas (7.4723ms)
+Ô£ö aceita moeda brasileira, receita, data relativa e conta expl├¡cita (3.155ms)
+Ô£ö aceita milhares por extenso e categoria personalizada (1.3478ms)
+Ô£ö n├úo adivinha valor, data, recorr├¬ncia ou opera├º├úo amb├¡gua (0.9883ms)
+Ô£ö saldo e gastos usam dados reais e ignoram transfer├¬ncias (2.4866ms)
+Ô£ö consultas n├úo ignoram filtros ou pedidos fora do escopo (0.8129ms)
+Ô£ö proje├º├úo e simula├º├úo reutilizam os registros e n├úo criam transa├º├Áes (1.5804ms)
+Ô£ö datas relativas e segundo valor por extenso nunca viram lan├ºamento para hoje (0.7381ms)
+Ô£ö multiplicadores, centavos incompletos e valores escondidos em categoria pedem corre├º├úo (0.6859ms)
+Ô£ö aceita comandos falados com BRL, sa├¡das na padaria e entradas diretas (1.3801ms)
+Ô£ö extrai hashtags faladas, escritas e autom├íticas para servi├ºos e locais (2.9294ms)
+Ô£ö Importa├º├úo assistida: valida├º├úo at├┤mica, RPC import_user_state, preserva├º├úo de dados de visitante e confirma├º├úo de sincronizado (11.7641ms)
+Ô£ö converte reais brasileiros em centavos sem perder precis├úo (1.9882ms)
+Ô£ö rejeita valores vazios, amb├¡guos ou inv├ílidos em vez de mudar o valor (1.3578ms)
+Ô£ö preserva saldo negativo e zero somente nos campos que os permitem (1.3187ms)
+Ô£ö exibe milhar e duas casas decimais, inclusive ao editar valores existentes (0.2761ms)
+Ô£ö formata durante a digita├º├úo preservando a v├¡rgula e entradas incompletas (0.5407ms)
+Ô£ö corrige separadores comuns automaticamente (0.3001ms)
+Sync mutation failed, will retry later: Failed to fetch (offline)
+Ô£ö Valida├º├úo de Ponta a Ponta: Duas contas familiares, isolamento RLS, recupera├º├úo de senha, fila offline e idempot├¬ncia (22.1629ms)
+Ô£ö parseGoalSpeech extrai valores falados para metas com precis├úo (3.2924ms)
+Ô£ö matchGoalFromText identifica objetivo na fala ou usa o objetivo ativo (0.3317ms)
+Ô£ö aportes atualizam o saldo reservado, percentual e valor restante em tempo real (0.5853ms)
+Ô£ö rejeita datas de calend├írio imposs├¡veis antes do envio (4.669ms)
+Ô£ö aceita notes null de exporta├º├úo compat├¡vel com SQL (0.202ms)
+Ô£ö preserva entrada original ao validar backup legado (3.4067ms)
+Ô£ö panel aceita tanto string de classe quanto objeto de atributos (1.6329ms)
+Ô£ö metric card interativo responde a clique, teclado e exp├Áe bot├úo de ditar/editar (1.0486ms)
+Ô£ö lan├ºamentos ├║nicos alteram o futuro uma ├║nica vez, no m├¬s previsto (4.0282ms)
+Ô£ö hist├│rico comp├Áe a base; transfer├¬ncias e aportes n├úo viram gastos (0.2948ms)
+Ô£ö cart├úo considera fechamento e vencimento sem duplicar pagamento parcial (0.4545ms)
+Ô£ö pagamento anterior j├í est├í na base e s├│ o restante entra no futuro (0.2656ms)
+Ô£ö fatura vencida fica no primeiro m├¬s e pagamento tardio n├úo duplica a sa├¡da (0.4103ms)
+Ô£ö saldo negativo, horizonte vazio e corre├º├úo de valor s├úo refletidos (0.2552ms)
+Ô£ö impacto individual distingue entradas, sa├¡das e movimentos neutros (0.203ms)
+Ô£ö PWA: manifest.webmanifest v├ílido e ├¡cones acess├¡veis (4.3989ms)
+Ô£ö PWA: sw.js precacheia todos os assets necess├írios e ignora requisi├º├Áes de API Supabase (6.6271ms)
+Ô£ö n├úo inicia sozinho; configura pt-BR e ignora start duplicado (1.5558ms)
+Ô£ö parciais e final s├│ transcrevem; stop e fechamento encerram a sess├úo (1.2874ms)
+Ô£ö permiss├úo negada informa alternativa e permite nova tentativa (1.1189ms)
+Ô£ö sem suporte e erro de in├¡cio n├úo deixam estado de escuta preso (0.4079ms)
+Ô£ö Supabase Auth: Cadastro restrito a e-mails autorizados na lista de convites (1.7011ms)
+Ô£ö Supabase Auth: Login, falha de senha incorreta, recupera├º├úo e logout (1.2363ms)
+Ô£ö Valida├º├úo de payload no cliente: valida├º├úo estrutural completa, detec├º├úo de IDs e integridade relacional (4.0163ms)
+Ô£ö C├ílculo de hash de payload para idempot├¬ncia (5.6158ms)
+Ô£ö Isolamento de Mem├│ria, Cache e Filas de Sincroniza├º├úo entre dois usu├írios (7.7555ms)
+Ôä╣ tests 45
+Ôä╣ suites 0
+Ôä╣ pass 45
+Ôä╣ fail 0
+Ôä╣ cancelled 0
+Ôä╣ skipped 0
+Ôä╣ todo 0
+Ôä╣ duration_ms 174.256

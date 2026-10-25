@@ -1,0 +1,82 @@
+name: Supabase Local Validation & End-to-End Tests
+
+on:
+  push:
+    branches:
+      - feature/supabase-auth
+  workflow_dispatch:
+
+concurrency:
+  group: supabase-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: 'verification/package-lock.json'
+
+      - name: Install dependencies
+        run: |
+          npm --prefix verification ci
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start local Supabase stack
+        run: |
+          supabase start
+
+      - name: Reset database & apply migrations on clean local environment
+        run: |
+          supabase db reset --local
+
+      - name: 1. Execute application test suite (45 client & domain tests)
+        run: |
+          npm --prefix verification run test:client
+
+      - name: 2. Execute native SQL suite & 2-connection concurrency test
+        env:
+          FINANCE_OS_LOCAL_TEST: '1'
+          LOCAL_DATABASE_URL: 'postgresql://postgres:postgres@127.0.0.1:54322/postgres'
+        run: |
+          npm --prefix verification run test:local
+          npm --prefix verification run test:concurrency
+
+      - name: 3. Execute live Supabase Auth, PostgREST & RLS End-to-End tests
+        run: |
+          STATUS_JSON=$(supabase status -o json)
+          ANON_KEY=$(echo "$STATUS_JSON" | jq -r .ANON_KEY)
+          API_URL=$(echo "$STATUS_JSON" | jq -r .API_URL)
+          DB_URL=$(echo "$STATUS_JSON" | jq -r .DB_URL)
+          
+          SUPABASE_LIVE_TEST=1 \
+          LOCAL_DATABASE_URL="$DB_URL" \
+          SUPABASE_URL="$API_URL" \
+          SUPABASE_ANON_KEY="$ANON_KEY" \
+          node --test tests/supabase-live-e2e.test.mjs
+
+      - name: 4. Execute browser tests on Chromium (Login, Signup, Settings & PWA)
+        run: |
+          node local-server.mjs &
+          sleep 3
+          BROWSER_TEST=1 APP_URL="http://127.0.0.1:8765" node --test tests/browser-e2e.test.mjs
+
+      - name: Stop Supabase stack
+        if: always()
+        run: |
+          supabase stop

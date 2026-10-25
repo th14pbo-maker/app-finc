@@ -1,0 +1,13 @@
+✔ rejeita datas de calendário impossíveis antes do envio (2.448464ms)
+✔ aceita notes null de exportação compatível com SQL (0.240876ms)
+✔ preserva entrada original ao validar backup legado (0.971156ms)
+✔ Validação de payload no cliente: validação estrutural completa, detecção de IDs e integridade relacional (4.216714ms)
+✔ Cálculo de hash de payload para idempotência (6.426981ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 138.610656
