@@ -24,6 +24,7 @@ else if(action==='deleteCard')s.cards=s.cards.filter(a=>a.id!==payload);
 else if(action==='saveGoal')upsert(s.goals,payload);
 else if(action==='deleteGoal'){s.goals=s.goals.filter(g=>g.id!==payload);s.contributions=s.contributions.filter(g=>g.goalId!==payload)}
 else if(action==='contribute')upsert(s.contributions,payload);
+else if(action==='deleteContribution')s.contributions=s.contributions.filter(c=>c.id!==payload);
 else if(action==='preferences')s.preferences={...s.preferences,...payload};
 else if(action==='importState'){const r=store.reset(payload);if(!r.ok)throw Error(r.error);render();toast('Backup restaurado neste navegador.');return true}
 else if(action==='reset'){const r=store.reset(initialState());if(!r.ok)throw Error(r.error);render();toast('Seu espaço financeiro foi zerado.');return true}
