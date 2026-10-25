@@ -94,7 +94,14 @@ jobs:
         run: |
           set -o pipefail
           CI=1 node local-server.mjs &
-          sleep 3
+          for i in $(seq 1 15); do
+            if curl -s http://127.0.0.1:8765/index.html >/dev/null; then
+              echo "Local server is up and responsive on port 8765"
+              break
+            fi
+            echo "Waiting for local server..."
+            sleep 1
+          done
           BROWSER_TEST=1 APP_URL="http://127.0.0.1:8765" node --test --test-reporter=spec tests/browser-e2e.test.mjs 2>&1 | tee /tmp/browser-e2e.log
 
       - name: Generate Summary and Diagnostics
